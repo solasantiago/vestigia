@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
+import { useKiosk } from '../lib/kiosk.jsx';
+import { computeDay } from '../lib/status.js';
 import { useApp } from '../lib/appctx.js';
 import { useData } from '../lib/data.jsx';
-import { addDays, dayOf, fmtDayCompact, fmtDayShort, fmtDuration, fmtTime, range } from '../lib/dates.js';
+import { addDays, calDayOf, calTodayISO, fmtDayCompact, fmtDayShort, fmtDuration, fmtTime, range } from '../lib/dates.js';
 import { fmt1, fmtInt, fmtSigned } from '../lib/format.js';
 import { feedingPerDay, mean, poopPerDay, walkHourHistogram, walksPerDay } from '../lib/metrics.js';
 import { ChartCard } from '../components/charts/core.jsx';
@@ -9,15 +11,18 @@ import { ColumnChart } from '../components/charts/ColumnChart.jsx';
 import { DayGrid } from '../components/charts/DayGrid.jsx';
 import { BarList, StatTile } from '../components/charts/Figures.jsx';
 import { Card, Chip, SectionTitle } from '../components/ui.jsx';
-import { DogsCard, FoodBlock, TREAT_LABEL } from './Today.jsx';
+import { DogsPanel, FoodBlock, TREAT_LABEL } from '../components/DogsPanel.jsx';
 import { DOG_COLOR, EventRow } from './common.jsx';
 
-const POOP_LABEL = { si: 'Sí', no: 'No', raro: 'Algo raro' };
 const KIND_COLOR = { corta: 'var(--cat-3)', larga: 'var(--cat-2)' };
 
 export default function Dogs() {
   const { model } = useData();
-  const { today, days, prevDays, period, startDate } = useApp();
+  const { today, now, days, prevDays, period, startDate, person } = useApp();
+  const kiosk = useKiosk();
+  const who = person === 'casa' ? kiosk.who : person;
+  const st = useMemo(() => computeDay(model, { day: today, now }), [model, today, now]);
+  const calToday = calTodayISO(new Date(now));
   const goal = model.settings?.walks_goal ?? null;
   const longGoal = model.settings?.long_walks_goal ?? null;
   const perDay = useMemo(() => walksPerDay(model, days), [model, days]);
@@ -42,7 +47,7 @@ export default function Dogs() {
     .sort((a, b) => b.value - a.value);
   const start90 = addDays(today, -90) < startDate ? startDate : addDays(today, -90);
   const days90 = range(start90, today);
-  const upcoming = model.events.filter((e) => e.category === 'perros' && dayOf(e.starts_at) >= today).slice(0, 4);
+  const upcoming = model.events.filter((e) => e.category === 'perros' && calDayOf(e.starts_at) >= calToday).slice(0, 4);
 
   return (
     <div className="stack">
@@ -79,7 +84,7 @@ export default function Dogs() {
       </div>
 
       <div className="grid two">
-        <DogsCard showFood={false} />
+        <DogsPanel st={st} who={who} calm={model.acks.has(today)} />
         <ChartCard
           title="Salidas por día"
           subtitle="Cada salida cuenta una vez, vayan una o las dos"
@@ -139,7 +144,7 @@ export default function Dogs() {
           />
         </ChartCard>
         <Card title="Alimento y premios" subtitle="La bolsa en uso y los premios del período">
-          <FoodBlock big needWho={false} onNewBag={null} />
+          <FoodBlock who={who} />
           <h4 className="mini-title">Premios del período</h4>
           <BarList items={treatKinds} fmt={(v) => fmtInt(v)} emptyText="Todavía sin premios anotados." />
         </Card>
@@ -212,7 +217,7 @@ export default function Dogs() {
                   <th>Quién</th>
                   <th>Tipo</th>
                   <th className="num">Duración</th>
-                  <th>Caca</th>
+                  <th>Pis y caca</th>
                 </tr>
               </thead>
               <tbody>
@@ -230,8 +235,10 @@ export default function Dogs() {
                       <td>
                         {w.dogs.map((x) => (
                           <span key={x.dog_id} className="poop-cell">
-                            {model.dogs.find((dd) => dd.id === x.dog_id)?.name}: {POOP_LABEL[x.poop] ?? '—'}
-                            {x.poop === 'raro' && x.poop_detail ? ` (${x.poop_detail})` : ''}
+                            {model.dogs.find((dd) => dd.id === x.dog_id)?.name}: {x.pee ? '💧' : ''}
+                            {x.poop === 'si' ? '💩' : x.poop === 'raro' ? `⚠️ caca ${x.poop_detail ?? 'rara'}` : ''}
+                            {!x.pee && x.poop === 'no' ? 'nada' : ''}
+                            {x.note ? ` · ${x.note}` : ''}
                           </span>
                         ))}
                       </td>
@@ -245,7 +252,7 @@ export default function Dogs() {
           {upcoming.length ? (
             <ul className="events">
               {upcoming.map((e) => (
-                <EventRow key={e.id} ev={e} today={today} people={model.peopleById} />
+                <EventRow key={e.id} ev={e} today={calToday} people={model.peopleById} />
               ))}
             </ul>
           ) : (

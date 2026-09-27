@@ -167,6 +167,8 @@ export function buildModel(db) {
     events: [...db.events].sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at)),
     logsByChore,
     firstDay,
+    // Días reconocidos con "Entendido" en el modo noche.
+    acks: new Map((db.day_acks ?? []).map((a) => [a.day, a])),
   };
 }
 
@@ -541,11 +543,16 @@ export function foodBag(model, today) {
   if (!last) return null;
   const daysOpen = Math.max(0, diffDays(today, last.bought_on));
   const refills = model.refills.filter((r) => r.day >= last.bought_on).length;
-  const finished = bags.slice(0, -1).map((b, i) => ({ bag: b, days: diffDays(bags[i + 1].bought_on, b.bought_on) }));
+  // Una bolsa que ya estaba empezada al arrancar el registro no sirve para aprender cuánto dura.
+  const finished = bags
+    .slice(0, -1)
+    .map((b, i) => ({ bag: b, days: diffDays(bags[i + 1].bought_on, b.bought_on) }))
+    .filter((f) => f.bag.known_start !== false && f.days > 0);
   const perKg = finished.length ? mean(finished.map((f) => f.days / Number(f.bag.kg))) : null;
   const expected = perKg != null ? perKg * Number(last.kg) : null;
   return {
     last,
+    knownStart: last.known_start !== false,
     daysOpen,
     refills,
     finishedBags: finished.length,

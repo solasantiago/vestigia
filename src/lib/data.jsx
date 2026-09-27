@@ -72,13 +72,20 @@ export function DataProvider({ children }) {
     };
   }, [status, reload]);
 
-  // Refresco al volver a la pestaña (el iPad queda abierto todo el día).
+  // Refresco al volver a la pestaña y cada 5 minutos: el iPad queda abierto todo el día
+  // y, si se corta el tiempo real, igual se pone al día solo.
   useEffect(() => {
     const onVis = () => {
       if (document.visibilityState === 'visible' && status === 'ready') loadAll();
     };
     document.addEventListener('visibilitychange', onVis);
-    return () => document.removeEventListener('visibilitychange', onVis);
+    const t = setInterval(() => {
+      if (status === 'ready' && document.visibilityState === 'visible') loadAll();
+    }, 5 * 60 * 1000);
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      clearInterval(t);
+    };
   }, [status, loadAll]);
 
   const patch = useCallback((table, fn) => {
@@ -89,6 +96,16 @@ export function DataProvider({ children }) {
     () => ({
       async answerHabit(habit, day, status, amount = null) {
         const row = { habit_id: habit.id, person_id: habit.person_id, day, status, amount, answered_at: new Date().toISOString() };
+        patch('habit_checkins', (rows) => [...rows.filter((r) => !(r.habit_id === habit.id && r.day === day)), { id: -Date.now(), ...row }]);
+        try {
+          unwrap(await supabase.from('habit_checkins').upsert(row, { onConflict: 'habit_id,day' }));
+        } finally {
+          await reload('habit_checkins');
+        }
+      },
+      /** Pastillas y check-ins: guarda cuántas tomas van y si se cerró el día sin tomarla ("Hoy no"). */
+      async setDose(habit, day, { status, amount, closed = false }) {
+        const row = { habit_id: habit.id, person_id: habit.person_id, day, status, amount, closed, answered_at: new Date().toISOString() };
         patch('habit_checkins', (rows) => [...rows.filter((r) => !(r.habit_id === habit.id && r.day === day)), { id: -Date.now(), ...row }]);
         try {
           unwrap(await supabase.from('habit_checkins').upsert(row, { onConflict: 'habit_id,day' }));
@@ -109,6 +126,14 @@ export function DataProvider({ children }) {
         unwrap(await supabase.from('mood_entries').upsert(row, { onConflict: 'person_id,day,slot' }));
         await reload('mood_entries');
       },
+      async ackDay(day, missing) {
+        unwrap(await supabase.from('day_acks').upsert({ day, acked_at: new Date().toISOString(), missing }, { onConflict: 'day' }));
+        await reload('day_acks');
+      },
+      async unackDay(day) {
+        unwrap(await supabase.from('day_acks').delete().eq('day', day));
+        await reload('day_acks');
+      },
       async logWalk({ walkerId, minutes, dogs, kind = 'corta', stairs = null, endedAt = new Date() }) {
         const end = new Date(endedAt);
         const start = new Date(end.getTime() - minutes * 60000);
@@ -121,9 +146,14 @@ export function DataProvider({ children }) {
         );
         unwrap(
           await supabase.from('walk_dogs').insert(
-            dogs.map((d) => ({ walk_id: walk.id, dog_id: d.dog_id, poop: d.poop, poop_detail: d.poop_detail ?? null, pee: d.pee ?? true })),
+            dogs.map((d) => ({ walk_id: walk.id, dog_id: d.dog_id, poop: d.poop, poop_detail: d.poop_detail ?? null, pee: Boolean(d.pee), note: d.note ?? null })),
           ),
         );
+        await reload('walks', 'walk_dogs');
+      },
+      async undoWalk(id) {
+        // walk_dogs se borra en cascada.
+        unwrap(await supabase.from('walks').delete().eq('id', id));
         await reload('walks', 'walk_dogs');
       },
       async logMeal(meal, byId) {
@@ -233,6 +263,8 @@ export function useRun() {
       try {
         const r = await fn();
         if (okText) toast(okText);
+        // Avisa al kiosco: después de guardar, vuelve al resumen al minuto.
+        window.dispatchEvent(new CustomEvent('vestigia:saved'));
         return r;
       } catch (e) {
         toast(`No se pudo guardar: ${e.message}`, 'error');

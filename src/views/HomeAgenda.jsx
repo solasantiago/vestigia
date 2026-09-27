@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useApp } from '../lib/appctx.js';
 import { useData, useRun } from '../lib/data.jsx';
-import { addDays, dayOf, fmtDayLong, fmtMonth, fmtTime, mondayIndex, range } from '../lib/dates.js';
+import { addDays, calDayOf, calTodayISO, dayOf, fmtDayLong, fmtMonth, fmtTime, mondayIndex, range } from '../lib/dates.js';
+import { useKiosk } from '../lib/kiosk.jsx';
 import { TZ } from '../config.js';
 import { visibleEvents } from '../lib/metrics.js';
-import { Card, Dialog, Segmented, SectionTitle, WhoPicker } from '../components/ui.jsx';
+import { Card, Dialog, Segmented, SectionTitle } from '../components/ui.jsx';
 import { NoTraces } from '../components/prints.jsx';
 import { CATEGORY, EventRow } from './common.jsx';
 
@@ -17,7 +18,9 @@ function localToISO(day, time) {
 
 export default function HomeAgenda() {
   const { model, actions } = useData();
-  const { person, today } = useApp();
+  const { person, now } = useApp();
+  // La agenda usa días calendario: a la 1 de la madrugada, "hoy" ya es el día nuevo.
+  const today = calTodayISO(new Date(now));
   const run = useRun();
   const [month, setMonth] = useState(today.slice(0, 7));
   const [picked, setPicked] = useState(today);
@@ -28,7 +31,7 @@ export default function HomeAgenda() {
   const byDay = useMemo(() => {
     const m = new Map();
     for (const e of events) {
-      const d = dayOf(e.starts_at);
+      const d = calDayOf(e.starts_at);
       if (!m.has(d)) m.set(d, []);
       m.get(d).push(e);
     }
@@ -40,7 +43,7 @@ export default function HomeAgenda() {
   const gridStart = addDays(first, -mondayIndex(first));
   const gridEnd = addDays(lastDay, 6 - mondayIndex(lastDay));
   const cells = range(gridStart, gridEnd);
-  const upcoming = events.filter((e) => dayOf(e.starts_at) >= today).slice(0, 12);
+  const upcoming = events.filter((e) => calDayOf(e.starts_at) >= today).slice(0, 12);
   const pickedEvents = byDay.get(picked) ?? [];
 
   const remove = (ev) => {
@@ -147,8 +150,10 @@ export default function HomeAgenda() {
 function HouseLog() {
   const { model, actions } = useData();
   const { person, today, startDate } = useApp();
+  const kiosk = useKiosk();
   const run = useRun();
-  const [who, setWho] = useState(person === 'casa' ? null : person);
+  // En el iPad, quién anota es quien eligió su nombre al tocar el resumen.
+  const who = person === 'casa' ? kiosk.who : person;
   if (!model.chores.length) return null;
   const since = addDays(today, -6) < startDate ? startDate : addDays(today, -6);
   const byId = new Map(model.chores.map((c) => [c.id, c]));
@@ -166,7 +171,7 @@ function HouseLog() {
       <Card
         title="¿Qué se hizo?"
         subtitle="Tocá lo que hicieron para dejarlo anotado."
-        actions={person === 'casa' ? <WhoPicker people={model.people} value={who} onChange={setWho} /> : null}
+        actions={person === 'casa' && who ? <span className="muted small">Anota: {model.peopleById.get(who)?.short_name}</span> : null}
       >
         <div className="choice-grid chores-grid">
           {model.chores.map((c) => {
@@ -186,7 +191,11 @@ function HouseLog() {
             );
           })}
         </div>
-        {!who ? <p className="muted small">Elegí quién sos para anotar.</p> : null}
+        {!who ? (
+          <p className="muted small">
+            Para anotar, tocá <strong>👀 Solo miro</strong> arriba y elegí quién sos.
+          </p>
+        ) : null}
       </Card>
       <Card title="Anotado estos días" subtitle="Solo como registro">
         {days.length ? (

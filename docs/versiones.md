@@ -13,7 +13,17 @@ Cada versión suma una sola cosa nueva, para acostumbrarse de a poco. Las próxi
 
 **Para pasar a la siguiente:** unas dos semanas registrando salidas y pastillas sin que se olviden.
 
-Anotado para más adelante: ficha de cada perra (peso, veterinario), medir la ración (tazas por carga) y avisos por horas sin salida.
+Anotado para más adelante: ficha de cada perra (peso, veterinario), medir la ración (tazas por carga) y ajustar las reglas del semáforo desde la app.
+
+## v0.1.1 — El tablero del iPad ✅ (27/9/2026)
+
+- **Resumen a pantalla completa** cuando nadie usa el iPad: estado del día, línea del día de las perras, agenda y la semana, rotando cada 12 s. Con algo en rojo se queda en el estado con una franja roja.
+- **Semáforo** con ícono, texto y color de fondo: verde fijo, naranja y rojo titilan.
+- **¿Quién está usando el iPad?** al tocar; vuelve solo al resumen (5 min sin tocar, 1 min después de guardar) y se olvida quién era.
+- **Kiosco sin scroll** en tres columnas (Mica y Santi · Mocka y Honey · Agenda); en vertical, dos columnas y la agenda abajo.
+- **Salidas de las dos juntas** con pis, caca y "algo raro" por perra; la próxima salida se sugiere por ritmo para llegar a 4 antes de las 2.
+- **El día cierra a las 5**, **modo noche** de 1 a 7 con "Entendido", y **modo visitas** que oculta las pastillas del resumen.
+- La bolsa de alimento y el historial pasan a la pestaña Perros; la bolsa que ya estaba empezada no se usa para calcular.
 
 ## v0.2 — Cada uno en su celular (propuesta)
 

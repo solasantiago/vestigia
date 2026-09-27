@@ -12,7 +12,7 @@ const FOOT_TOES = [
 ];
 
 /** Pie derecho en una caja de 28 × 44 apuntando hacia arriba. */
-function FootShape() {
+export function FootShape() {
   return (
     <>
       <path d={FOOT_SOLE} />
@@ -24,7 +24,7 @@ function FootShape() {
 }
 
 /** Patita en una caja de 24 × 24 apuntando hacia arriba. */
-function PawShape() {
+export function PawShape() {
   return (
     <>
       <path d="M12 22.5c-4.2 0-7.2-2.1-7.2-5.1 0-3.4 3.4-6.6 7.2-6.6s7.2 3.2 7.2 6.6c0 3-3 5.1-7.2 5.1z" />
@@ -101,7 +101,7 @@ function trailPoints({ width, y, amp, waves, step, stride, phase }) {
  * Rastro de la casa: dos personas y dos perros caminando juntos.
  * Decorativo: se dibuja detrás del contenido, sin texto.
  */
-export function HouseTrail({ width = 1200, height = 140, className = '', animate = false, dense = false }) {
+export function HouseTrail({ width = 1200, height = 140, className = '', animate = false, loop = false, dense = false }) {
   const walkers = [
     { kind: 'foot', color: 'var(--c-mica)', y: height * 0.3, amp: height * 0.08, step: dense ? 58 : 74, stride: 7, size: 22, phase: 0.2 },
     { kind: 'paw', color: 'var(--c-mocka)', y: height * 0.48, amp: height * 0.1, step: dense ? 34 : 42, stride: 5, size: 14, phase: 1.1 },
@@ -110,7 +110,7 @@ export function HouseTrail({ width = 1200, height = 140, className = '', animate
   ];
   return (
     <svg
-      className={`house-trail ${animate ? 'animate' : ''} ${className}`}
+      className={`house-trail ${animate ? 'animate' : ''} ${loop ? 'loop' : ''} ${className}`}
       viewBox={`0 0 ${width} ${height}`}
       preserveAspectRatio="xMidYMid slice"
       aria-hidden="true"
@@ -124,7 +124,7 @@ export function HouseTrail({ width = 1200, height = 140, className = '', animate
             <g
               key={`${wi}-${p.i}`}
               className="trail-print"
-              style={{ color: w.color, animationDelay: animate ? `${(p.i * 0.18 + wi * 0.07).toFixed(2)}s` : undefined }}
+              style={{ color: w.color, animationDelay: animate || loop ? `${(p.i * (loop ? 0.45 : 0.18) + wi * (loop ? 0.2 : 0.07)).toFixed(2)}s` : undefined }}
               transform={`translate(${p.x.toFixed(1)} ${p.y.toFixed(1)}) rotate(${p.angle.toFixed(1)}) scale(${s.toFixed(3)}) translate(${-bw / 2} ${-bh / 2})`}
               fill="currentColor"
             >

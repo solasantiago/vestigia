@@ -59,9 +59,9 @@ const THEME_OPTIONS = [
 ];
 
 /** Claro / oscuro / automático (lo que diga el sistema). */
-export function ThemeSwitch({ value, onChange }) {
+export function ThemeSwitch({ value, onChange, compact = false }) {
   return (
-    <div className="segmented sm theme-switch" role="radiogroup" aria-label="Tema">
+    <div className={`segmented sm theme-switch ${compact ? 'compact' : ''}`} role="radiogroup" aria-label="Tema">
       {THEME_OPTIONS.map((o) => (
         <button
           key={o.value}
