@@ -35,6 +35,7 @@ const STATE_LABEL = {
   na: 'No aplica',
   off: 'No tocaba',
   pending: 'Pendiente',
+  parcial: 'A medias',
 };
 
 export function stateCell(state) {
@@ -44,6 +45,8 @@ export function stateCell(state) {
     case 'no':
     case 'miss':
       return { fill: 'var(--state-no)', label: STATE_LABEL[state] };
+    case 'parcial':
+      return { fill: 'color-mix(in oklab, var(--accent) 45%, var(--surface))', label: STATE_LABEL.parcial };
     case 'na':
       return { hatch: true, label: STATE_LABEL.na };
     case 'off':
@@ -57,6 +60,7 @@ export function stateCell(state) {
 
 export const STATE_LEGEND = [
   { label: 'Hecho', color: 'var(--accent)' },
+  { label: 'A medias', color: 'color-mix(in oklab, var(--accent) 45%, var(--surface))' },
   { label: 'No o sin responder', color: 'var(--state-no)' },
   { label: 'No aplica', color: 'var(--state-na)', shape: 'hatch' },
   { label: 'No tocaba', color: 'var(--state-off)' },
@@ -265,6 +269,7 @@ export default function Habits() {
                 <p className="card-sub">
                   {h.source === 'auto' ? 'Automático · ' : `${SLOT_LABEL[h.slot]} · `}
                   {daysText(h.days)}
+                  {h.doses > 1 ? ` · ${h.doses} tomas` : ''}
                 </p>
               </div>
             </header>
@@ -300,11 +305,15 @@ export default function Habits() {
               showWeekdays={false}
               cell={(d) => stateCell(habitDayState(model, h, d, today))}
             />
-            {comp.na || comp.miss ? (
+            {comp.na || comp.miss || comp.parcial ? (
               <p className="card-foot">
-                {comp.miss ? `${comp.miss} sin responder` : ''}
-                {comp.miss && comp.na ? ' · ' : ''}
-                {comp.na ? `${comp.na} "no aplica"` : ''}
+                {[
+                  comp.parcial ? `${comp.parcial} a medias` : null,
+                  comp.miss ? `${comp.miss} sin responder` : null,
+                  comp.na ? `${comp.na} "no aplica"` : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
               </p>
             ) : null}
           </section>

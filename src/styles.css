@@ -2153,3 +2153,213 @@ select {
   color: var(--muted);
   font-size: 12px;
 }
+
+/* ───────────── v0.1 · kiosco del iPad ───────────── */
+
+.kiosk-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+@media (min-width: 700px) {
+  .kiosk-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .kiosk-grid .kiosk-side {
+    grid-column: span 2;
+  }
+}
+@media (min-width: 1100px) {
+  .kiosk-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr);
+  }
+  .kiosk-grid .kiosk-side {
+    grid-column: auto;
+  }
+}
+@media (min-width: 1100px) and (orientation: landscape) {
+  .house-head {
+    flex-wrap: nowrap;
+  }
+  .house-head .alerts {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+.house-head .alerts {
+  margin: 0;
+}
+
+.walk-progress {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.walk-progress > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--surface-2);
+}
+.wp-label {
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 800;
+}
+.wp-value {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.wp-value .muted {
+  font-size: 14px;
+}
+.walk-progress .meter {
+  height: 8px;
+  margin-top: 6px;
+}
+
+.feed-today {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 12px;
+  font-size: 14px;
+}
+.link-btn {
+  margin-left: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.food-product {
+  margin: 0 0 2px;
+  font-weight: 700;
+}
+.mini-title {
+  margin: 18px 0 8px;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 140px), 1fr));
+  gap: 8px;
+}
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 8px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  font-weight: 700;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+.choice:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.choice.on {
+  background: color-mix(in oklab, var(--accent) 14%, var(--surface));
+  border-color: color-mix(in oklab, var(--accent) 45%, transparent);
+}
+.choice-label {
+  flex: 1;
+}
+.choice-count {
+  color: var(--good-text);
+  font-weight: 800;
+}
+.chores-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr));
+}
+
+.log-days {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.log-day h4 {
+  margin-bottom: 6px;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 800;
+}
+.log-day ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.routine {
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px dashed var(--border-strong);
+}
+.routine-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin-bottom: 8px;
+}
+.routine-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.routine-foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 0;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.checkin.parcial {
+  border-color: color-mix(in oklab, var(--accent) 40%, transparent);
+  background: color-mix(in oklab, var(--accent) 7%, var(--surface));
+}
+.partial {
+  color: var(--text-2);
+  font-weight: 700;
+}
+.streak {
+  color: var(--text-2);
+  font-weight: 700;
+}
+.btn.yes.soft {
+  background: color-mix(in oklab, var(--accent) 22%, var(--surface));
+  color: var(--text);
+}
+.btn.yes.soft:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--accent) 32%, var(--surface));
+}

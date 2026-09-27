@@ -1,5 +1,5 @@
 import { dayOf, fmtDayCompact, fmtTime } from '../lib/dates.js';
-import { dogStatus, foodStock, visibleEvents } from '../lib/metrics.js';
+import { dogStatus, foodBag, visibleEvents } from '../lib/metrics.js';
 import { Chip } from '../components/ui.jsx';
 
 export const CATEGORY = {
@@ -47,7 +47,7 @@ export function buildAlerts(model, { today, now, person }) {
       out.push({ id: `rare-${x.dog.id}`, tone: 'critical', icon: '⚠️', text: `${x.dog.name}: caca rara dos veces seguidas. Conviene consultar al veterinario.` });
     }
   }
-  const food = foodStock(model, today);
+  const food = foodBag(model, today);
   if (cfg.food_alert_days && food && food.daysLeft != null && food.daysLeft <= cfg.food_alert_days) {
     const d = Math.max(0, Math.round(food.daysLeft));
     out.push({ id: 'food', tone: d <= 2 ? 'critical' : 'warning', icon: '🛒', text: `Comprá alimento: queda para ~${d} ${d === 1 ? 'día' : 'días'}` });

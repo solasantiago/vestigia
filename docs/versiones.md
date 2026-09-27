@@ -5,11 +5,15 @@ Cada versión suma una sola cosa nueva, para acostumbrarse de a poco. Las próxi
 ## v0.1 — El iPad de la casa ✅ (desde el 27/9/2026)
 
 - Cuenta **Casa** con la sesión abierta en el iPad, en modo kiosco.
-- Check-ins de los dos en el iPad, paseos, caca, comida, refill y bolsa de alimento, agenda compartida y tareas.
+- Check-ins de los dos en el iPad, con pastillas en varias tomas y rutina opcional para dormir.
+- Salidas cortas y paseos largos, caca, cargas de tarritos, premios y bolsa de alimento.
+- Agenda compartida y registro opcional de la casa (sin pendientes ni atrasos).
 - Métricas de perros y de hábitos.
 - Sin ánimo: en una pantalla compartida deja de ser privado.
 
-**Para pasar a la siguiente:** unas dos semanas registrando paseos y comidas sin que se olviden.
+**Para pasar a la siguiente:** unas dos semanas registrando salidas y pastillas sin que se olviden.
+
+Anotado para más adelante: ficha de cada perra (peso, veterinario), medir la ración (tazas por carga) y avisos por horas sin salida.
 
 ## v0.2 — Cada uno en su celular (propuesta)
 

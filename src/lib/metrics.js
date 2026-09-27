@@ -135,6 +135,13 @@ export function buildModel(db) {
     logsByChore.get(l.chore_id).push(l);
   }
 
+  const routineItems = [...(db.routine_items ?? [])].filter((r) => r.active).sort((a, b) => a.sort - b.sort);
+  const routineLogs = new Map();
+  for (const l of db.routine_logs ?? []) routineLogs.set(`${l.item_id}|${l.day}`, l);
+  const treats = [...(db.dog_treats ?? [])]
+    .map((t) => ({ ...t, day: dayOf(t.given_at) }))
+    .sort((a, b) => new Date(a.given_at) - new Date(b.given_at));
+
   const people = [...db.people].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0) || a.name.localeCompare(b.name));
   const firstDay = startDate ?? [...db.health_daily.map((h) => h.day), ...db.habit_checkins.map((c) => c.day)].sort()[0] ?? null;
 
@@ -153,7 +160,10 @@ export function buildModel(db) {
     walks,
     mealsByDay,
     purchases: [...db.food_purchases].sort((a, b) => a.bought_on.localeCompare(b.bought_on)),
-    refills: [...db.food_refills].sort((a, b) => new Date(a.at) - new Date(b.at)),
+    refills: [...db.food_refills].map((r) => ({ ...r, day: dayOf(r.at) })).sort((a, b) => new Date(a.at) - new Date(b.at)),
+    routineItems,
+    routineLogs,
+    treats,
     events: [...db.events].sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at)),
     logsByChore,
     firstDay,
@@ -181,7 +191,7 @@ export function habitDayState(model, habit, day, today) {
   return 'future';
 }
 
-const COUNTS = new Set(['si', 'no', 'miss']);
+const COUNTS = new Set(['si', 'no', 'miss', 'parcial']);
 
 export function habitStreaks(model, habit, today) {
   const first = model.firstDay ?? addDays(today, -90);
@@ -206,14 +216,16 @@ export function habitStreaks(model, habit, today) {
 }
 
 export function habitCompliance(model, habit, days, today) {
-  const c = { si: 0, no: 0, miss: 0, na: 0, scheduled: 0 };
+  const c = { si: 0, no: 0, miss: 0, na: 0, parcial: 0, scheduled: 0 };
   for (const d of days) {
     const s = habitDayState(model, habit, d, today);
-    if (s === 'off' || s === 'future' || s === 'pending' || s === 'before') continue;
+    if (s === 'off' || s === 'future' || s === 'before') continue;
+    // Hoy sin terminar no cuenta; hoy "a medias" tampoco todavía (puede completarse a la noche).
+    if (s === 'pending' || (s === 'parcial' && d === today)) continue;
     c.scheduled += 1;
     c[s] += 1;
   }
-  const base = c.si + c.no + c.miss;
+  const base = c.si + c.no + c.miss + c.parcial;
   return { ...c, pct: base ? c.si / base : null };
 }
 
@@ -225,7 +237,7 @@ export function groupCompliance(model, habits, days, today) {
   for (const h of habits) {
     const c = habitCompliance(model, h, days, today);
     si += c.si;
-    base += c.si + c.no + c.miss;
+    base += c.si + c.no + c.miss + c.parcial;
     miss += c.miss;
   }
   return { si, base, miss, pct: base ? si / base : null };
@@ -475,11 +487,12 @@ export function dogStatus(model, dogId, now = Date.now()) {
 }
 
 export function walksPerDay(model, days) {
-  const idx = new Map(days.map((d) => [d, { day: d, total: 0, mocka: 0, honey: 0, minutes: 0 }]));
+  const idx = new Map(days.map((d) => [d, { day: d, total: 0, corta: 0, larga: 0, mocka: 0, honey: 0, minutes: 0 }]));
   for (const w of model.walks) {
     const row = idx.get(w.day);
     if (!row) continue;
     row.total += 1;
+    row[w.kind === 'larga' ? 'larga' : 'corta'] += 1;
     row.minutes += w.minutes ?? 0;
     for (const d of w.dogs) row[d.dog_id] = (row[d.dog_id] ?? 0) + 1;
   }
@@ -508,6 +521,37 @@ export function walkHourHistogram(model, days) {
   const hist = Array.from({ length: 24 }, (_, h) => ({ key: String(h), label: `${h} h`, hour: h, n: 0 }));
   for (const w of model.walks) if (set.has(w.day)) hist[Math.floor(minutesOf(w.started_at) / 60)].n += 1;
   return hist;
+}
+
+/** Cargas de tarritos y premios por día. */
+export function feedingPerDay(model, days) {
+  const idx = new Map(days.map((d) => [d, { day: d, refills: 0, treats: 0 }]));
+  for (const r of model.refills) if (idx.has(r.day)) idx.get(r.day).refills += 1;
+  for (const t of model.treats) if (idx.has(t.day)) idx.get(t.day).treats += 1;
+  return [...idx.values()];
+}
+
+/**
+ * Bolsa de alimento sin ración medida: cuánto lleva abierta, cuántas cargas de tarritos,
+ * y, cuando ya se terminó al menos una bolsa, cuánto suele durar.
+ */
+export function foodBag(model, today) {
+  const bags = model.purchases;
+  const last = bags[bags.length - 1];
+  if (!last) return null;
+  const daysOpen = Math.max(0, diffDays(today, last.bought_on));
+  const refills = model.refills.filter((r) => r.day >= last.bought_on).length;
+  const finished = bags.slice(0, -1).map((b, i) => ({ bag: b, days: diffDays(bags[i + 1].bought_on, b.bought_on) }));
+  const perKg = finished.length ? mean(finished.map((f) => f.days / Number(f.bag.kg))) : null;
+  const expected = perKg != null ? perKg * Number(last.kg) : null;
+  return {
+    last,
+    daysOpen,
+    refills,
+    finishedBags: finished.length,
+    expectedDays: expected,
+    daysLeft: expected != null ? expected - daysOpen : null,
+  };
 }
 
 export function foodStock(model, today) {

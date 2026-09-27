@@ -2,34 +2,44 @@ import { useMemo } from 'react';
 import { useApp } from '../lib/appctx.js';
 import { useData } from '../lib/data.jsx';
 import { addDays, dayOf, fmtDayCompact, fmtDayShort, fmtDuration, fmtTime, range } from '../lib/dates.js';
-import { fmt1, fmtInt, fmtPct, fmtSigned, fmtKg } from '../lib/format.js';
-import { foodStock, mealsCompliance, mean, poopPerDay, walkHourHistogram, walksPerDay } from '../lib/metrics.js';
+import { fmt1, fmtInt, fmtSigned } from '../lib/format.js';
+import { feedingPerDay, mean, poopPerDay, walkHourHistogram, walksPerDay } from '../lib/metrics.js';
 import { ChartCard } from '../components/charts/core.jsx';
 import { ColumnChart } from '../components/charts/ColumnChart.jsx';
 import { DayGrid } from '../components/charts/DayGrid.jsx';
-import { Meter, StatTile } from '../components/charts/Figures.jsx';
+import { BarList, StatTile } from '../components/charts/Figures.jsx';
 import { Card, Chip, SectionTitle } from '../components/ui.jsx';
-import { DogsCard } from './Today.jsx';
+import { DogsCard, FoodBlock, TREAT_LABEL } from './Today.jsx';
 import { DOG_COLOR, EventRow } from './common.jsx';
 
 const POOP_LABEL = { si: 'Sí', no: 'No', raro: 'Algo raro' };
+const KIND_COLOR = { corta: 'var(--cat-3)', larga: 'var(--cat-2)' };
 
 export default function Dogs() {
   const { model } = useData();
   const { today, days, prevDays, period, startDate } = useApp();
-  const goal = model.dogs.map((d) => d.walks_goal).find((g) => g != null) ?? null;
-  const pastDays = days.filter((d) => d < today);
+  const goal = model.settings?.walks_goal ?? null;
+  const longGoal = model.settings?.long_walks_goal ?? null;
   const perDay = useMemo(() => walksPerDay(model, days), [model, days]);
   const perDayPrev = useMemo(() => walksPerDay(model, prevDays), [model, prevDays]);
+  const feeding = useMemo(() => feedingPerDay(model, days), [model, days]);
   const past = perDay.filter((r) => r.day < today);
   const avgWalks = mean(past.map((r) => r.total));
-  const prevAvg = perDayPrev.length && perDayPrev.some((r) => r.total) ? mean(perDayPrev.map((r) => r.total)) : null;
+  const avgLong = mean(past.map((r) => r.larga));
+  const prevAvg = perDayPrev.some((r) => r.total) ? mean(perDayPrev.map((r) => r.total)) : null;
   const periodWalks = model.walks.filter((w) => w.day >= days[0] && w.day <= today);
-  const avgMin = mean(periodWalks.map((w) => w.minutes));
-  const daysAtGoal = goal ? past.filter((r) => r.total >= goal).length : null;
+  const longWalks = periodWalks.filter((w) => w.kind === 'larga');
+  const avgLongMin = mean(longWalks.map((w) => w.minutes));
+  const stairsPct = longWalks.length ? longWalks.filter((w) => w.stairs).length / longWalks.length : null;
+  const daysAtGoal = goal ? past.filter((r) => r.total >= goal && (!longGoal || r.larga >= longGoal)).length : null;
   const hist = walkHourHistogram(model, days).filter((h) => h.hour >= 6);
-  const food = foodStock(model, today);
-  const meals = mealsCompliance(model, pastDays);
+  const pastFeeding = feeding.filter((r) => r.day < today);
+  const periodTreats = model.treats.filter((t) => t.day >= days[0] && t.day <= today);
+  const treatKinds = Object.entries(
+    periodTreats.reduce((acc, t) => ({ ...acc, [t.kind]: (acc[t.kind] ?? 0) + 1 }), {}),
+  )
+    .map(([k, n]) => ({ key: k, label: TREAT_LABEL[k] ?? k, value: n }))
+    .sort((a, b) => b.value - a.value);
   const start90 = addDays(today, -90) < startDate ? startDate : addDays(today, -90);
   const days90 = range(start90, today);
   const upcoming = model.events.filter((e) => e.category === 'perros' && dayOf(e.starts_at) >= today).slice(0, 4);
@@ -38,50 +48,70 @@ export default function Dogs() {
     <div className="stack">
       {days.length < 7 ? (
         <p className="lede">
-          Vestigia registra desde el {Number(startDate.slice(8, 10))}/{Number(startDate.slice(5, 7))}: con cada paseo y cada comida, estos gráficos se van llenando.
+          Vestigia registra desde el {Number(startDate.slice(8, 10))}/{Number(startDate.slice(5, 7))}: con cada salida, carga de tarritos y premio, estos gráficos se van llenando.
         </p>
       ) : null}
       <div className="kpis">
         <StatTile
-          label="Paseos por día"
+          label="Salidas por día"
           value={fmt1(avgWalks)}
           unit={goal ? `/ meta ${goal}` : undefined}
           delta={avgWalks != null && prevAvg != null ? { value: avgWalks - prevAvg, text: fmtSigned(avgWalks - prevAvg) } : null}
           deltaLabel={`vs ${period} días anteriores`}
-          sub={`${daysAtGoal} de ${past.length} días llegaron a la meta`}
+          sub={past.length ? `${daysAtGoal ?? '—'} de ${past.length} ${past.length === 1 ? 'día llegó' : 'días llegaron'} a la meta` : 'Se cuenta desde mañana, con el día completo'}
         />
-        <StatTile label="Duración promedio" value={fmtDuration(avgMin)} sub={`${fmtInt(periodWalks.length)} paseos en el período`} />
-        <StatTile label="Comidas registradas" value={fmtPct(meals)} sub="Días con desayuno y cena cargados" />
         <StatTile
-          label="Alimento"
-          value={food?.daysLeft != null ? `~${Math.max(0, Math.round(food.daysLeft))}` : '—'}
-          unit="días"
-          sub={food?.refillEvery != null ? `Refill cada ${fmt1(food.refillEvery)} días en promedio` : food ? 'Todavía sin refills' : 'Falta cargar la bolsa'}
+          label="Paseos largos por día"
+          value={fmt1(avgLong)}
+          unit={longGoal ? `/ meta ${longGoal}` : undefined}
+          sub={longWalks.length ? `Duran ${fmtDuration(avgLongMin)} en promedio` : 'Todavía sin paseos largos'}
+        />
+        <StatTile
+          label="Escalera al volver"
+          value={stairsPct == null ? '—' : `${Math.round(stairsPct * 100)}%`}
+          sub="De los paseos largos, cuántos terminaron subiendo los 2 pisos"
+        />
+        <StatTile
+          label="Tarritos por día"
+          value={fmt1(mean(pastFeeding.map((r) => r.refills)))}
+          sub={`${fmtInt(periodTreats.length)} ${periodTreats.length === 1 ? 'premio' : 'premios'} en el período`}
         />
       </div>
 
       <div className="grid two">
         <DogsCard showFood={false} />
         <ChartCard
-          title="Paseos por día"
-          subtitle="Cada salida cuenta una vez, vayan uno o los dos"
+          title="Salidas por día"
+          subtitle="Cada salida cuenta una vez, vayan una o las dos"
+          legend={[
+            { label: 'Paseo largo', color: KIND_COLOR.larga },
+            { label: 'Salida corta', color: KIND_COLOR.corta },
+          ]}
           table={{
             columns: [
               { key: 'day', label: 'Día', fmt: (v) => fmtDayCompact(v) },
               { key: 'total', label: 'Salidas', num: true },
-              { key: 'mocka', label: 'Mocka', num: true },
-              { key: 'honey', label: 'Honey', num: true },
+              { key: 'larga', label: 'Largas', num: true },
+              { key: 'corta', label: 'Cortas', num: true },
               { key: 'minutes', label: 'Minutos', num: true },
             ],
             rows: perDay,
           }}
         >
           <ColumnChart
-            ariaLabel="Paseos por día"
-            data={perDay.map((r) => ({ key: r.day, label: fmtDayShort(r.day), title: fmtDayCompact(r.day), values: { n: r.day === today && !r.total ? null : r.total } }))}
-            stack={[{ key: 'n', label: 'Paseos', color: 'var(--accent)' }]}
+            ariaLabel="Salidas por día"
+            data={perDay.map((r) => ({
+              key: r.day,
+              label: fmtDayShort(r.day),
+              title: fmtDayCompact(r.day),
+              values: r.day === today && !r.total ? { larga: null, corta: null } : { larga: r.larga, corta: r.corta },
+            }))}
+            stack={[
+              { key: 'larga', label: 'Paseos largos', color: KIND_COLOR.larga },
+              { key: 'corta', label: 'Salidas cortas', color: KIND_COLOR.corta },
+            ]}
             fmtY={(v) => String(Math.round(v))}
-            yMax={Math.max(4, ...perDay.map((r) => r.total))}
+            yMax={Math.max(6, ...perDay.map((r) => r.total))}
             goal={goal ? { value: goal, label: `Meta ${goal}` } : undefined}
           />
         </ChartCard>
@@ -89,60 +119,46 @@ export default function Dogs() {
 
       <div className="grid two">
         <ChartCard
-          title="A qué hora salen"
-          subtitle="Cantidad de paseos que empezaron en cada hora"
-          table={{ columns: [{ key: 'label', label: 'Hora' }, { key: 'n', label: 'Paseos', num: true }], rows: hist }}
+          title="Cargas de tarritos por día"
+          subtitle="Cada vez que se les puso comida"
+          table={{
+            columns: [
+              { key: 'day', label: 'Día', fmt: (v) => fmtDayCompact(v) },
+              { key: 'refills', label: 'Tarritos', num: true },
+              { key: 'treats', label: 'Premios', num: true },
+            ],
+            rows: feeding,
+          }}
         >
           <ColumnChart
-            ariaLabel="Paseos por hora del día"
-            data={hist.map((h) => ({ key: h.key, label: String(h.hour), title: `De ${h.hour}:00 a ${h.hour}:59`, values: { n: h.n } }))}
-            yMax={Math.max(4, ...hist.map((h) => h.n))}
-            stack={[{ key: 'n', label: 'Paseos', color: 'var(--accent)' }]}
-            labelMinGap={26}
+            ariaLabel="Cargas de tarritos por día"
+            data={feeding.map((r) => ({ key: r.day, label: fmtDayShort(r.day), title: fmtDayCompact(r.day), values: { n: r.day === today && !r.refills ? null : r.refills } }))}
+            stack={[{ key: 'n', label: 'Cargas', color: 'var(--accent)' }]}
+            fmtY={(v) => String(Math.round(v))}
+            yMax={Math.max(4, ...feeding.map((r) => r.refills))}
           />
         </ChartCard>
-        <Card title="Comida y stock" subtitle="Se calcula con la ración diaria de cada uno">
-          {food ? (
-            <div className="food big">
-              <div className="food-head">
-                <span>Queda para</span>
-                <strong>{food.daysLeft != null ? `~${Math.max(0, Math.round(food.daysLeft))} días` : '—'}</strong>
-              </div>
-              {food.daysLeft != null ? (
-                <Meter
-                  value={food.pct}
-                  label="Alimento restante"
-                  tone={food.daysLeft <= 2 ? 'critical' : model.settings?.food_alert_days && food.daysLeft <= model.settings.food_alert_days ? 'warning' : 'accent'}
-                />
-              ) : (
-                <p className="muted small">Falta la ración diaria de los perros para calcular cuánto queda.</p>
-              )}
-              <dl className="facts">
-                <div>
-                  <dt>Última bolsa</dt>
-                  <dd>
-                    {fmtKg(food.last.kg)} kg · {fmtDayCompact(food.last.bought_on)} · {model.peopleById.get(food.last.bought_by)?.short_name}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Consumo</dt>
-                  <dd>{food.dailyG ? `${fmtInt(food.dailyG)} g por día` : '—'}</dd>
-                </div>
-                <div>
-                  <dt>Refills desde la compra</dt>
-                  <dd>{food.refillsSince}</dd>
-                </div>
-                <div>
-                  <dt>Último refill</dt>
-                  <dd>{food.lastRefill ? `${fmtDayCompact(dayOf(food.lastRefill.at))} ${fmtTime(food.lastRefill.at)}` : '—'}</dd>
-                </div>
-              </dl>
-            </div>
-          ) : (
-            <p className="empty">Cargá la primera compra de alimento.</p>
-          )}
+        <Card title="Alimento y premios" subtitle="La bolsa en uso y los premios del período">
+          <FoodBlock big needWho={false} onNewBag={null} />
+          <h4 className="mini-title">Premios del período</h4>
+          <BarList items={treatKinds} fmt={(v) => fmtInt(v)} emptyText="Todavía sin premios anotados." />
         </Card>
       </div>
+
+      <ChartCard
+        title="A qué hora salen"
+        subtitle="Cantidad de salidas que empezaron en cada hora"
+        table={{ columns: [{ key: 'label', label: 'Hora' }, { key: 'n', label: 'Salidas', num: true }], rows: hist }}
+      >
+        <ColumnChart
+          ariaLabel="Salidas por hora del día"
+          data={hist.map((h) => ({ key: h.key, label: String(h.hour), title: `De ${h.hour}:00 a ${h.hour}:59`, values: { n: h.n } }))}
+          yMax={Math.max(4, ...hist.map((h) => h.n))}
+          stack={[{ key: 'n', label: 'Salidas', color: 'var(--accent)' }]}
+          labelMinGap={26}
+          height={170}
+        />
+      </ChartCard>
 
       <SectionTitle sub="Últimos 90 días. Sirve para mostrarle el historial al veterinario.">Caca, perro por perro</SectionTitle>
       <div className="grid two">
@@ -187,13 +203,14 @@ export default function Dogs() {
       </div>
 
       <div className="grid two wide-left">
-        <ChartCard title="Últimos paseos" subtitle="Quién, cuánto y qué pasó">
+        <ChartCard title="Últimas salidas" subtitle="Quién, cuánto y qué pasó">
           <div className="table-wrap">
             <table className="data-table">
               <thead>
                 <tr>
                   <th>Cuándo</th>
                   <th>Quién</th>
+                  <th>Tipo</th>
                   <th className="num">Duración</th>
                   <th>Caca</th>
                 </tr>
@@ -208,6 +225,7 @@ export default function Dogs() {
                         {w.day === today ? 'Hoy' : fmtDayCompact(w.day)} {fmtTime(w.started_at)}
                       </td>
                       <td>{model.peopleById.get(w.walker_id)?.short_name}</td>
+                      <td>{w.kind === 'larga' ? `Largo${w.stairs ? ' · escalera' : ''}` : 'Corta'}</td>
                       <td className="num">{fmtDuration(w.minutes)}</td>
                       <td>
                         {w.dogs.map((x) => (
@@ -236,7 +254,7 @@ export default function Dogs() {
           <div className="chips-row">
             {model.dogs.map((d) => (
               <Chip key={d.id} icon="🐕">
-                {d.name}: {d.walks_goal ? `meta ${d.walks_goal} paseos` : 'sin meta de paseos'}
+                {d.name}
               </Chip>
             ))}
           </div>

@@ -3,16 +3,20 @@
 Los rastros de cada día en casa: check-ins de hábitos, paseos, caca y comida de Mocka y Honey, tareas y agenda compartida. Registra datos reales desde el **domingo 27 de septiembre de 2026**.
 
 🌐 **Web:** https://solasantiago.github.io/vestigia/
-📄 [Documento funcional](docs/documento-funcional.md) · 🗺️ [Versiones](docs/versiones.md)
+📄 [Documento funcional](docs/documento-funcional.md) · 🗺️ [Versiones](docs/versiones.md) · 🥣 [Alimento](docs/alimento.md)
 
 La prueba de concepto con datos de ejemplo vive aparte, en [tracker_demo](https://github.com/solasantiago/tracker_demo).
 
 ## Versión actual: v0.1, el iPad de la casa
 
 - Una sola cuenta, **Casa**, con la sesión abierta en el iPad.
-- **Hoy:** check-ins de Mica y de Santi, uno al lado del otro; paseos, caca, comidas, refill y bolsa de alimento; agenda compartida; tareas de la casa; avisos.
+- **Hoy**, pensado para el iPad horizontal, en tres columnas:
+  - **Mica y Santi**, cada uno con sus check-ins. Las pastillas en dos tomas se pueden marcar de a una, y la que falta vuelve a aparecer a la noche. Santi tiene además una rutina opcional para dormir, que aparece desde las 18 h.
+  - **Mocka y Honey:** salidas cortas y paseos largos contra la meta del día (4 salidas, 2 largas), caca, **+1 tarritos**, **+1 premio** y la bolsa de alimento.
+  - **Agenda compartida.**
 - **Perros, Hábitos y Agenda y casa:** métricas que se llenan desde el primer día.
-- Antes de anotar un paseo, una comida o una tarea, se toca **quién** lo hizo. Se borra solo a los 5 minutos.
+- **Registro de la casa:** botones opcionales para anotar lo que se hizo. Sin pendientes, atrasos ni metas.
+- Antes de anotar una salida, una carga o un premio, se toca **quién** lo hizo. Se borra solo a los 5 minutos.
 - Ánimo, sueño, pantalla y análisis quedan para las próximas versiones.
 
 ## Seguridad

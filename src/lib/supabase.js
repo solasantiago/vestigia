@@ -24,6 +24,9 @@ export const TABLES = {
   food_refills: ['id'],
   events: ['id'],
   chore_logs: ['id'],
+  routine_items: ['id'],
+  routine_logs: ['id'],
+  dog_treats: ['id'],
 };
 
 // Tablas que se escuchan en tiempo real.
@@ -40,6 +43,9 @@ export const LIVE_TABLES = [
   'chores',
   'dogs',
   'household_settings',
+  'routine_items',
+  'routine_logs',
+  'dog_treats',
 ];
 
 const PAGE = 1000;

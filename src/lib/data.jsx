@@ -87,8 +87,8 @@ export function DataProvider({ children }) {
 
   const actions = useMemo(
     () => ({
-      async answerHabit(habit, day, status) {
-        const row = { habit_id: habit.id, person_id: habit.person_id, day, status, answered_at: new Date().toISOString() };
+      async answerHabit(habit, day, status, amount = null) {
+        const row = { habit_id: habit.id, person_id: habit.person_id, day, status, amount, answered_at: new Date().toISOString() };
         patch('habit_checkins', (rows) => [...rows.filter((r) => !(r.habit_id === habit.id && r.day === day)), { id: -Date.now(), ...row }]);
         try {
           unwrap(await supabase.from('habit_checkins').upsert(row, { onConflict: 'habit_id,day' }));
@@ -109,13 +109,13 @@ export function DataProvider({ children }) {
         unwrap(await supabase.from('mood_entries').upsert(row, { onConflict: 'person_id,day,slot' }));
         await reload('mood_entries');
       },
-      async logWalk({ walkerId, minutes, dogs, endedAt = new Date() }) {
+      async logWalk({ walkerId, minutes, dogs, kind = 'corta', stairs = null, endedAt = new Date() }) {
         const end = new Date(endedAt);
         const start = new Date(end.getTime() - minutes * 60000);
         const walk = unwrap(
           await supabase
             .from('walks')
-            .insert({ started_at: start.toISOString(), ended_at: end.toISOString(), walker_id: walkerId })
+            .insert({ started_at: start.toISOString(), ended_at: end.toISOString(), walker_id: walkerId, kind, stairs })
             .select('id')
             .single(),
         );
@@ -142,13 +142,37 @@ export function DataProvider({ children }) {
         unwrap(await supabase.from('food_refills').insert({ by_id: byId, at: new Date().toISOString() }));
         await reload('food_refills');
       },
-      async buyFood(kg, byId, day = todayISO()) {
-        unwrap(await supabase.from('food_purchases').insert({ bought_on: day, kg, bought_by: byId }));
+      async buyFood(kg, byId, day = todayISO(), product = null) {
+        unwrap(await supabase.from('food_purchases').insert({ bought_on: day, kg, bought_by: byId, product }));
         await reload('food_purchases');
       },
       async choreDone(choreId, byId) {
         unwrap(await supabase.from('chore_logs').insert({ chore_id: choreId, done_by: byId, done_at: new Date().toISOString() }));
         await reload('chore_logs');
+      },
+      async undoChore(logId) {
+        unwrap(await supabase.from('chore_logs').delete().eq('id', logId));
+        await reload('chore_logs');
+      },
+      async undoRefill(id) {
+        unwrap(await supabase.from('food_refills').delete().eq('id', id));
+        await reload('food_refills');
+      },
+      async logTreat(kind, byId, dogIds) {
+        unwrap(await supabase.from('dog_treats').insert({ kind, given_by: byId, dog_ids: dogIds, given_at: new Date().toISOString() }));
+        await reload('dog_treats');
+      },
+      async undoTreat(id) {
+        unwrap(await supabase.from('dog_treats').delete().eq('id', id));
+        await reload('dog_treats');
+      },
+      async toggleRoutine(item, day, on) {
+        if (on) {
+          unwrap(await supabase.from('routine_logs').upsert({ item_id: item.id, person_id: item.person_id, day, done_at: new Date().toISOString() }, { onConflict: 'item_id,day' }));
+        } else {
+          unwrap(await supabase.from('routine_logs').delete().eq('item_id', item.id).eq('day', day));
+        }
+        await reload('routine_logs');
       },
       async addEvent(ev) {
         unwrap(await supabase.from('events').insert(ev));

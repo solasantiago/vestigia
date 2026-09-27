@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useApp } from '../lib/appctx.js';
 import { useData, useRun } from '../lib/data.jsx';
-import { addDays, dayOf, fmtAgo, fmtClock, fmtDuration, fmtTime, minutesOf } from '../lib/dates.js';
-import { fmtInt, fmtKg } from '../lib/format.js';
+import { addDays, dayOf, fmtAgo, fmtClock, fmtDayCompact, fmtDuration, fmtTime, minutesOf } from '../lib/dates.js';
+import { fmtInt, fmtKg, plural } from '../lib/format.js';
 import {
-  choreStatus,
   dogStatus,
-  foodStock,
+  foodBag,
   habitDayState,
   habitsOf,
+  habitStreaks,
   lowMoodStreak,
   moodSlotOfNow,
   personDaily,
@@ -18,7 +18,7 @@ import {
 } from '../lib/metrics.js';
 import { Avatar, Card, Chip, Dialog, Segmented, WhoPicker } from '../components/ui.jsx';
 import { Meter } from '../components/charts/Figures.jsx';
-import { NoTraces, PawIcon } from '../components/prints.jsx';
+import { FootIcon, NoTraces, PawIcon } from '../components/prints.jsx';
 import { FEATURES } from '../config.js';
 import { AlertList, buildAlerts, EventRow, FEELINGS, greeting, INFLUENCES } from './common.jsx';
 
@@ -85,24 +85,42 @@ function PersonToday() {
         {FEATURES.mood ? <MoodCard /> : null}
         <DogsCard />
         <AgendaCard />
-        <ChoresCard />
       </div>
     </div>
   );
 }
 
-function CheckinsCard({ className, personId, shared = false }) {
-  const { model, actions } = useData();
+// ───────────────────────── check-ins ─────────────────────────
+
+const SLOTS = ['manana', 'mediodia', 'tarde', 'noche'];
+const ORDINAL = ['', 'primera', 'segunda', 'tercera', 'cuarta', 'quinta', 'sexta'];
+
+export function CheckinsCard({ className, personId, shared = false }) {
+  const { model } = useData();
   const { today, now } = useApp();
-  const run = useRun();
   const [snoozed, setSnoozed] = useState({});
   const who = model.peopleById.get(personId);
   const habits = habitsOf(model, personId);
   const current = slotOfNow(minutesOf(now));
-  const todays = habits.filter((h) => !['off', 'before'].includes(habitDayState(model, h, today, today)));
-  const manual = todays.filter((h) => h.source === 'manual');
-  const answered = manual.filter((h) => habitDayState(model, h, today, today) !== 'pending').length;
-  const slots = ['manana', 'mediodia', 'tarde', 'noche'].filter((s) => todays.some((h) => h.slot === s));
+  const ci = SLOTS.indexOf(current);
+  const placed = habits
+    .map((h) => {
+      const st = habitDayState(model, h, today, today);
+      const row = model.checkinsByHabit.get(h.id)?.get(today) ?? null;
+      // Si quedó a medias y ya llegó la franja del recordatorio, la pregunta pasa a esa franja.
+      let slot = h.slot;
+      if (st === 'parcial' && h.reminder_slot && ci >= SLOTS.indexOf(h.reminder_slot)) slot = h.reminder_slot;
+      return { h, st, row, slot };
+    })
+    .filter((p) => !['off', 'before'].includes(p.st));
+  const manual = placed.filter((p) => p.h.source === 'manual');
+  const done = manual.filter((p) => p.st === 'si' || p.st === 'na').length;
+  // La rutina para dormir aparece desde las 18 h (o si ya se marcó algo hoy).
+  const nowMin = minutesOf(now);
+  const routineAll = model.routineItems.filter((r) => r.person_id === personId);
+  const routineStarted = routineAll.some((r) => model.routineLogs.has(`${r.id}|${today}`));
+  const routine = nowMin >= 18 * 60 || nowMin < 6 * 60 || routineStarted ? routineAll : [];
+  const slotsUsed = SLOTS.filter((s) => placed.some((p) => p.slot === s) || (s === 'noche' && routine.length));
 
   return (
     <Card
@@ -116,71 +134,159 @@ function CheckinsCard({ className, personId, shared = false }) {
           'Check-ins de hoy'
         )
       }
-      subtitle={manual.length ? `${answered} de ${manual.length} respondidos` : null}
-      actions={manual.length ? <Meter value={answered / manual.length} label="Check-ins respondidos" /> : null}
+      subtitle={manual.length ? `${done} de ${manual.length} ${manual.length === 1 ? 'listo' : 'listos'}` : null}
+      actions={manual.length ? <Meter value={done / manual.length} label="Check-ins listos" /> : null}
     >
-      {!habits.length ? <NoTraces>Todavía no hay hábitos cargados para {who?.short_name ?? 'esta persona'}.</NoTraces> : null}
-      {habits.length && !todays.length ? <NoTraces>Hoy no hay preguntas para {who?.short_name}.</NoTraces> : null}
-      {slots.map((slot) => (
+      {!habits.length && !routineAll.length ? <NoTraces>Todavía no hay hábitos cargados para {who?.short_name ?? 'esta persona'}.</NoTraces> : null}
+      {slotsUsed.map((slot) => (
         <div key={slot} className={`slot ${slot === current ? 'now' : ''}`}>
           <h4 className="slot-title">
             {SLOT_LABEL[slot]} {slot === current ? <Chip tone="accent">Ahora</Chip> : null}
           </h4>
-          <ul className="checkins">
-            {todays
-              .filter((h) => h.slot === slot)
-              .sort((a, b) => (snoozed[a.id] ? 1 : 0) - (snoozed[b.id] ? 1 : 0))
-              .map((h) => {
-                const state = habitDayState(model, h, today, today);
-                const row = model.checkinsByHabit.get(h.id)?.get(today);
-                return (
-                  <li key={h.id} className={`checkin ${state}`}>
-                    <span className="checkin-emoji" aria-hidden="true">
-                      {h.emoji}
-                    </span>
-                    <div className="checkin-text">
-                      <div className="checkin-q">{h.source === 'auto' ? h.name : h.question}</div>
-                      <div className="checkin-meta">
-                        {h.source === 'auto' ? (
-                          <span className="muted">{h.question} · se completa cuando llegan los pasos.</span>
-                        ) : state === 'si' ? (
-                          <span className="ok">✓ Hecho · {fmtTime(row.answered_at)}</span>
-                        ) : state === 'na' ? (
-                          <span className="muted">Hoy no aplica</span>
-                        ) : snoozed[h.id] ? (
-                          <span className="muted">⏰ {shared ? 'Queda para más tarde' : 'Te lo vuelvo a preguntar más tarde'}</span>
-                        ) : null}
-                      </div>
-                    </div>
-                    {h.source === 'auto' ? null : state === 'pending' ? (
-                      <div className="answer">
-                        <button type="button" className="btn yes" onClick={() => run(() => actions.answerHabit(h, today, 'si'))}>
-                          Sí
-                        </button>
-                        <button
-                          type="button"
-                          className="btn ghost"
-                          onClick={() => setSnoozed((s) => ({ ...s, [h.id]: Date.now() }))}
-                          disabled={Boolean(snoozed[h.id])}
-                        >
-                          Todavía no
-                        </button>
-                        <button type="button" className="btn ghost" onClick={() => run(() => actions.answerHabit(h, today, 'na'))}>
-                          No aplica
-                        </button>
-                      </div>
-                    ) : (
-                      <button type="button" className="btn ghost xs" onClick={() => run(() => actions.clearHabit(h, today))}>
-                        Deshacer
-                      </button>
-                    )}
-                  </li>
-                );
-              })}
-          </ul>
+          {placed.some((p) => p.slot === slot) ? (
+            <ul className="checkins">
+              {placed
+                .filter((p) => p.slot === slot)
+                .sort((a, b) => (snoozed[a.h.id] ? 1 : 0) - (snoozed[b.h.id] ? 1 : 0))
+                .map((p) => (
+                  <HabitRow
+                    key={p.h.id}
+                    {...p}
+                    shared={shared}
+                    snoozed={Boolean(snoozed[p.h.id])}
+                    onSnooze={() => setSnoozed((s) => ({ ...s, [p.h.id]: Date.now() }))}
+                  />
+                ))}
+            </ul>
+          ) : null}
+          {slot === 'noche' && routine.length ? <RoutineBlock items={routine} /> : null}
         </div>
       ))}
     </Card>
+  );
+}
+
+function HabitRow({ h, st, row, shared, snoozed, onSnooze }) {
+  const { model, actions } = useData();
+  const { today } = useApp();
+  const run = useRun();
+  const doses = h.doses ?? 1;
+  const amount = row?.amount ?? (st === 'si' ? doses : 0);
+  const streak = st === 'si' ? habitStreaks(model, h, today).current : 0;
+  const answer = (status, amt = null) => run(() => actions.answerHabit(h, today, status, amt));
+  const addOne = () => {
+    const next = Math.min(doses, amount + 1);
+    return answer(next >= doses ? 'si' : 'parcial', next);
+  };
+
+  let question = h.source === 'auto' ? h.name : h.question;
+  if (st === 'parcial') question = doses === 2 ? '¿Tomaste la segunda?' : `¿Tomaste la ${ORDINAL[amount + 1] ?? 'siguiente'}?`;
+
+  let meta = null;
+  if (h.source === 'auto') meta = <span className="muted">{h.question} · se completa cuando llegan los pasos.</span>;
+  else if (st === 'si')
+    meta = (
+      <span className="ok">
+        ✓ {doses > 1 ? `Las ${doses}` : 'Hecho'} · {fmtTime(row.answered_at)}
+        {streak >= 2 ? <span className="streak"> · van {streak} días seguidos</span> : null}
+      </span>
+    );
+  else if (st === 'parcial')
+    meta = (
+      <span className="partial">
+        ✓ {amount} de {doses} · {fmtTime(row.answered_at)}
+        {h.reminder_slot ? ` · falta ${doses - amount === 1 ? 'una' : doses - amount}` : ''}
+      </span>
+    );
+  else if (st === 'na') meta = <span className="muted">Hoy no aplica</span>;
+  else if (snoozed)
+    meta = (
+      <span className="muted">
+        ⏰ {shared ? 'Queda para más tarde' : 'Te lo vuelvo a preguntar más tarde'}
+        {doses > 1 ? '. Si te sirve, podés tomar una ahora y la otra más tarde.' : ''}
+      </span>
+    );
+
+  return (
+    <li className={`checkin ${st}`}>
+      <span className="checkin-emoji" aria-hidden="true">
+        {h.emoji}
+      </span>
+      <div className="checkin-text">
+        <div className="checkin-q">{question}</div>
+        {meta ? <div className="checkin-meta">{meta}</div> : null}
+      </div>
+      {h.source === 'auto' ? null : st === 'pending' ? (
+        <div className="answer">
+          {doses > 1 ? (
+            <>
+              <button type="button" className="btn yes" onClick={() => answer('si', doses)}>
+                {doses === 2 ? 'Las dos' : `Las ${doses}`}
+              </button>
+              <button type="button" className="btn yes soft" onClick={addOne}>
+                Una
+              </button>
+            </>
+          ) : (
+            <button type="button" className="btn yes" onClick={() => answer('si', 1)}>
+              Sí
+            </button>
+          )}
+          <button type="button" className="btn ghost" onClick={onSnooze} disabled={snoozed}>
+            Todavía no
+          </button>
+          {doses === 1 ? (
+            <button type="button" className="btn ghost" onClick={() => answer('na')}>
+              No aplica
+            </button>
+          ) : null}
+        </div>
+      ) : st === 'parcial' ? (
+        <div className="answer">
+          <button type="button" className="btn yes" onClick={addOne}>
+            Sí, la tomé
+          </button>
+          <button type="button" className="btn ghost xs" onClick={() => run(() => actions.clearHabit(h, today))}>
+            Deshacer
+          </button>
+        </div>
+      ) : (
+        <button type="button" className="btn ghost xs" onClick={() => run(() => actions.clearHabit(h, today))}>
+          Deshacer
+        </button>
+      )}
+    </li>
+  );
+}
+
+/** Rutina opcional (higiene del sueño): se marca lo que se hizo; lo que no, no cuenta en contra. */
+function RoutineBlock({ items }) {
+  const { model, actions } = useData();
+  const { today } = useApp();
+  const run = useRun();
+  const count = items.filter((it) => model.routineLogs.has(`${it.id}|${today}`)).length;
+  return (
+    <div className="routine">
+      <div className="routine-head">
+        <strong>Rutina para dormir</strong>
+        <span className="muted small">Opcional · marcá lo que hiciste hoy</span>
+      </div>
+      <div className="routine-items">
+        {items.map((it) => {
+          const on = model.routineLogs.has(`${it.id}|${today}`);
+          return (
+            <button key={it.id} type="button" className={`tag ${on ? 'on' : ''}`} aria-pressed={on} onClick={() => run(() => actions.toggleRoutine(it, today, !on))}>
+              <span aria-hidden="true">{it.emoji}</span> {it.label}
+            </button>
+          );
+        })}
+      </div>
+      {count ? (
+        <p className="routine-foot">
+          <FootIcon size={14} /> {count} de {items.length} esta noche
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -313,40 +419,74 @@ function MoodCard() {
   );
 }
 
+
+
 // ───────────────────────── perros (compartido) ─────────────────────────
+
+const TREATS = [
+  { value: 'pollito', label: 'Pollito', icon: '🍗' },
+  { value: 'dentastix', label: 'Dentastix', icon: '🦷' },
+  { value: 'golosina', label: 'Golosina', icon: '🍪' },
+  { value: 'otro', label: 'Otro', icon: '🎁' },
+];
+export const TREAT_LABEL = Object.fromEntries(TREATS.map((t) => [t.value, t.label]));
 
 export function DogsCard({ big = false, showFood = true, who: whoProp, onWho }) {
   const { model, actions } = useData();
   const { person, today, now } = useApp();
   const run = useRun();
   const [walkOpen, setWalkOpen] = useState(false);
+  const [treatOpen, setTreatOpen] = useState(false);
   const [foodOpen, setFoodOpen] = useState(false);
   const [whoLocal, setWhoLocal] = useState(person === 'casa' ? null : person);
   const who = onWho ? whoProp : whoLocal;
   const setWho = onWho ?? setWhoLocal;
-  const meals = model.mealsByDay.get(today) ?? {};
-  const meal = minutesOf(now) < mealSwitchMinutes(model.settings) ? 'desayuno' : 'cena';
-  const foodWarn = model.settings?.food_alert_days;
-  const given = meals[meal];
-  const food = foodStock(model, today);
-  const people = model.people;
+  const needWho = !who;
+  const whoTitle = needWho ? 'Elegí quién sos' : undefined;
 
-  const needWho = person === 'casa' && !who;
+  const goal = model.settings?.walks_goal ?? null;
+  const longGoal = model.settings?.long_walks_goal ?? null;
+  const walksToday = model.walks.filter((w) => w.day === today);
+  const longToday = walksToday.filter((w) => w.kind === 'larga').length;
+  const refillsToday = model.refills.filter((r) => r.day === today);
+  const treatsToday = model.treats.filter((t) => t.day === today);
+  const lastRefill = refillsToday[refillsToday.length - 1];
+  const lastTreat = treatsToday[treatsToday.length - 1];
+  const name = (id) => model.peopleById.get(id)?.short_name ?? '';
 
   return (
     <Card
-      className={big ? 'span-2 dogs-card big' : 'dogs-card'}
+      className={`dogs-card ${big ? 'big' : ''}`}
       title="Mocka y Honey"
       subtitle="Compartido con la casa"
       actions={
         person === 'casa' && !onWho ? (
           <div className="who-inline">
             <span className="muted small">¿Quién sos?</span>
-            <WhoPicker people={people} value={who} onChange={setWho} />
+            <WhoPicker people={model.people} value={who} onChange={setWho} />
           </div>
         ) : null
       }
     >
+      <div className="walk-progress">
+        <div>
+          <span className="wp-label">Salidas hoy</span>
+          <span className="wp-value">
+            {walksToday.length}
+            {goal ? <span className="muted"> de {goal}</span> : null}
+          </span>
+          {goal ? <Meter value={walksToday.length / goal} label="Salidas de hoy" /> : null}
+        </div>
+        <div>
+          <span className="wp-label">Paseos largos</span>
+          <span className="wp-value">
+            {longToday}
+            {longGoal ? <span className="muted"> de {longGoal}</span> : null}
+          </span>
+          {longGoal ? <Meter value={longToday / longGoal} label="Paseos largos de hoy" /> : null}
+        </div>
+      </div>
+
       <ul className="dogs">
         {model.dogs.map((d) => {
           const st = dogStatus(model, d.id, now);
@@ -362,16 +502,17 @@ export function DogsCard({ big = false, showFood = true, who: whoProp, onWho }) 
                 <div className="dog-line">
                   {st.last ? (
                     <>
-                      Último paseo {dayOf(st.lastAt) === today ? fmtTime(st.last.started_at) : `${dayOf(st.lastAt) === addDays(today, -1) ? 'ayer' : ''} ${fmtTime(st.last.started_at)}`}
+                      {st.last.kind === 'larga' ? 'Último paseo' : 'Última salida'}{' '}
+                      {dayOf(st.lastAt) === today ? fmtTime(st.last.started_at) : `${dayOf(st.lastAt) === addDays(today, -1) ? 'ayer ' : ''}${fmtTime(st.last.started_at)}`}
                       {walker ? ` con ${walker.short_name}` : ''} · <strong>{fmtAgo(st.lastAt, now)}</strong>
                     </>
                   ) : (
-                    'Sin paseos registrados'
+                    'Todavía sin salidas registradas'
                   )}
                 </div>
                 <div className="dog-flags">
                   <Chip tone={poopedToday ? 'good' : 'quiet'} icon="💩">
-                    {poopedToday ? 'Hizo caca hoy' : st.lastPoopAt ? `Última caca ${fmtAgo(st.lastPoopAt, now)}` : 'Sin registro'}
+                    {poopedToday ? 'Caca hoy ✓' : st.lastPoopAt ? `Última caca ${fmtAgo(st.lastPoopAt, now)}` : 'Sin registro de caca'}
                   </Chip>
                   {st.rareTwice ? (
                     <Chip tone="critical" icon="⚠️">
@@ -385,110 +526,109 @@ export function DogsCard({ big = false, showFood = true, who: whoProp, onWho }) 
         })}
       </ul>
 
-      <div className="meals">
-        {['desayuno', 'cena'].map((m) => {
-          const row = meals[m];
-          const by = row ? model.peopleById.get(row.given_by) : null;
-          return (
-            <div key={m} className={`meal ${row ? 'done' : ''}`}>
-              <span aria-hidden="true">{m === 'desayuno' ? '🥣' : '🍲'}</span>
-              <span>
-                {m === 'desayuno' ? 'Desayuno' : 'Cena'}: {row ? <strong>{`${by?.short_name ?? ''} a las ${fmtTime(row.given_at)}`}</strong> : <span className="muted">pendiente</span>}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
       <div className="actions-row">
         <button type="button" className="btn primary" onClick={() => setWalkOpen(true)}>
-          <PawIcon size={18} /> Registrar paseo
+          <PawIcon size={18} /> Registrar salida
         </button>
-        {given ? (
-          <span className="muted small">
-            Ya les dio {model.peopleById.get(given.given_by)?.short_name} a las {fmtTime(given.given_at)}
-          </span>
-        ) : (
-          <button
-            type="button"
-            className="btn"
-            disabled={needWho}
-            title={needWho ? 'Elegí quién sos' : undefined}
-            onClick={() =>
-              run(async () => {
-                const r = await actions.logMeal(meal, who);
-                if (r?.already) throw new Error('alguien ya la cargó recién');
-              }, `Listo: ${meal} registrado`)
-            }
-          >
-            {meal === 'desayuno' ? '🥣 Les di el desayuno' : '🍲 Les di la cena'}
-          </button>
-        )}
-        <button type="button" className="btn ghost" disabled={needWho} onClick={() => run(() => actions.refill(who), 'Refill registrado')}>
-          Refill del tarro
+        <button
+          type="button"
+          className="btn"
+          disabled={needWho}
+          title={whoTitle}
+          onClick={() => run(() => actions.refill(who), 'Tarritos cargados')}
+        >
+          🥣 +1 tarritos
+        </button>
+        <button type="button" className="btn" disabled={needWho} title={whoTitle} onClick={() => setTreatOpen(true)}>
+          🦴 +1 premio
         </button>
       </div>
 
-      {showFood ? (
-        <div className="food">
-          <div className="food-head">
-            <span>Alimento</span>
-            {food?.daysLeft != null ? <strong>~{Math.max(0, Math.round(food.daysLeft))} días</strong> : null}
-          </div>
-          {food?.daysLeft != null ? (
-            <Meter
-              value={food.pct}
-              label="Alimento restante"
-              tone={food.daysLeft <= 2 ? 'critical' : foodWarn && food.daysLeft <= foodWarn ? 'warning' : 'accent'}
-            />
+      <div className="feed-today">
+        <div>
+          <strong>Tarritos hoy:</strong>{' '}
+          {refillsToday.length ? refillsToday.map((r) => `${fmtTime(r.at)} ${name(r.by_id)}`).join(' · ') : <span className="muted">ninguna carga todavía</span>}
+          {lastRefill && Date.now() - new Date(lastRefill.at).getTime() < 10 * 60000 ? (
+            <button type="button" className="link-btn" onClick={() => run(() => actions.undoRefill(lastRefill.id), 'Carga borrada')}>
+              deshacer
+            </button>
           ) : null}
-          <p className="muted small">
-            {!food
-              ? 'Todavía no se cargó la bolsa de alimento.'
-              : food.dailyG
-                ? `Bolsa de ${fmtKg(food.last.kg)} kg del ${Number(food.last.bought_on.slice(8, 10))}/${Number(food.last.bought_on.slice(5, 7))} · ${fmtInt(food.dailyG)} g por día entre los dos`
-                : `Bolsa de ${fmtKg(food.last.kg)} kg del ${Number(food.last.bought_on.slice(8, 10))}/${Number(food.last.bought_on.slice(5, 7))} · falta la ración diaria para calcular cuánto queda`}
-          </p>
-          <button type="button" className="btn ghost xs" disabled={needWho} title={needWho ? 'Elegí quién sos' : undefined} onClick={() => setFoodOpen(true)}>
-            {food ? 'Compré una bolsa nueva' : 'Cargar la bolsa'}
-          </button>
         </div>
-      ) : null}
+        <div>
+          <strong>Premios hoy:</strong>{' '}
+          {treatsToday.length ? treatsToday.map((t) => `${TREAT_LABEL[t.kind]} (${name(t.given_by)})`).join(' · ') : <span className="muted">ninguno</span>}
+          {lastTreat && Date.now() - new Date(lastTreat.given_at).getTime() < 10 * 60000 ? (
+            <button type="button" className="link-btn" onClick={() => run(() => actions.undoTreat(lastTreat.id), 'Premio borrado')}>
+              deshacer
+            </button>
+          ) : null}
+        </div>
+      </div>
 
-      <WalkDialog key={who ?? 'nadie'} open={walkOpen} onClose={() => setWalkOpen(false)} defaultWho={who} />
-      <FoodDialog open={foodOpen} onClose={() => setFoodOpen(false)} who={who} />
+      {showFood ? <FoodBlock onNewBag={() => setFoodOpen(true)} needWho={needWho} /> : null}
+
+      <WalkDialog key={`w-${who ?? 'nadie'}-${walkOpen}`} open={walkOpen} onClose={() => setWalkOpen(false)} defaultWho={who} />
+      <TreatDialog key={`t-${treatOpen}`} open={treatOpen} onClose={() => setTreatOpen(false)} who={who} />
+      <FoodDialog key={`f-${foodOpen}`} open={foodOpen} onClose={() => setFoodOpen(false)} who={who} />
     </Card>
   );
 }
 
-/** Hora (en minutos) a la que el botón pasa de "desayuno" a "cena": a mitad de camino entre las dos comidas. */
-function mealSwitchMinutes(settings) {
-  const toMin = (t) => (t ? Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5)) : null);
-  const b = toMin(settings?.breakfast_time);
-  const d = toMin(settings?.dinner_time);
-  if (b != null && d != null && d > b) return Math.round((b + d) / 2);
-  return 15 * 60;
+export function FoodBlock({ onNewBag, needWho, big = false }) {
+  const { model } = useData();
+  const { today } = useApp();
+  const bag = foodBag(model, today);
+  return (
+    <div className={`food ${big ? 'big' : ''}`}>
+      <div className="food-head">
+        <span>Alimento</span>
+        {bag?.daysLeft != null ? <strong>~{Math.max(0, Math.round(bag.daysLeft))} días</strong> : null}
+      </div>
+      {bag ? (
+        <>
+          {bag.last.product ? <p className="food-product">{bag.last.product}</p> : null}
+          <p className="muted small">
+            Bolsa de {fmtKg(bag.last.kg)} kg desde el {fmtDayCompact(bag.last.bought_on)} · {bag.daysOpen === 0 ? 'desde hoy' : `hace ${bag.daysOpen} ${bag.daysOpen === 1 ? 'día' : 'días'}`} ·{' '}
+            {bag.refills} {bag.refills === 1 ? 'carga' : 'cargas'} de tarritos
+          </p>
+          <p className="muted small">
+            {bag.expectedDays != null
+              ? `Por las bolsas anteriores, una así dura ~${Math.round(bag.expectedDays)} días.`
+              : 'Cuando se termine, tocá "Compré una bolsa nueva": Vestigia aprende cuánto dura cada bolsa.'}
+          </p>
+        </>
+      ) : (
+        <p className="muted small">Todavía no se cargó la bolsa de alimento.</p>
+      )}
+      {onNewBag ? (
+        <button type="button" className="btn ghost xs" disabled={needWho} title={needWho ? 'Elegí quién sos' : undefined} onClick={onNewBag}>
+          {bag ? 'Compré una bolsa nueva' : 'Cargar la bolsa'}
+        </button>
+      ) : null}
+    </div>
+  );
 }
 
 function FoodDialog({ open, onClose, who }) {
-  const { actions } = useData();
+  const { model, actions } = useData();
   const { today } = useApp();
   const run = useRun();
+  const lastProduct = model.purchases[model.purchases.length - 1]?.product ?? '';
   const [kg, setKg] = useState('');
   const [day, setDay] = useState(today);
+  const [product, setProduct] = useState(lastProduct);
   const value = Number(String(kg).replace(',', '.'));
   const ok = value > 0 && value < 100 && day && who;
   const save = () =>
     run(async () => {
-      await actions.buyFood(value, who, day);
-      setKg('');
+      await actions.buyFood(value, who, day, product.trim() || null);
       onClose();
-    }, 'Bolsa de alimento cargada');
+    }, 'Bolsa nueva cargada');
   return (
     <Dialog
       open={open}
       onClose={onClose}
-      title="Bolsa de alimento"
+      title="Bolsa nueva de alimento"
       footer={
         <>
           <button type="button" className="btn ghost" onClick={onClose}>
@@ -503,14 +643,71 @@ function FoodDialog({ open, onClose, who }) {
       <div className="field-row">
         <label className="field">
           <span>Kilos</span>
-          <input type="text" inputMode="decimal" placeholder="Ej.: 15" value={kg} onChange={(e) => setKg(e.target.value)} />
+          <input type="text" inputMode="decimal" placeholder="Ej.: 7,5" value={kg} onChange={(e) => setKg(e.target.value)} />
         </label>
         <label className="field">
           <span>La abrieron el</span>
           <input type="date" value={day} max={today} onChange={(e) => setDay(e.target.value)} />
         </label>
       </div>
-      <p className="muted small">Desde ese día se descuenta la ración diaria de los dos para estimar cuánto queda.</p>
+      <label className="field">
+        <span>Alimento</span>
+        <input type="text" value={product} onChange={(e) => setProduct(e.target.value)} />
+      </label>
+      <p className="muted small">La bolsa anterior queda cerrada ese día: así se aprende cuánto duró.</p>
+    </Dialog>
+  );
+}
+
+function TreatDialog({ open, onClose, who }) {
+  const { model, actions } = useData();
+  const run = useRun();
+  const [kind, setKind] = useState(null);
+  const [dogs, setDogs] = useState(() => Object.fromEntries(model.dogs.map((d) => [d.id, true])));
+  const chosen = model.dogs.filter((d) => dogs[d.id]).map((d) => d.id);
+  const save = () =>
+    run(async () => {
+      await actions.logTreat(kind, who, chosen);
+      onClose();
+    }, 'Premio anotado');
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      title="+1 premio"
+      footer={
+        <>
+          <button type="button" className="btn ghost" onClick={onClose}>
+            Cancelar
+          </button>
+          <button type="button" className="btn primary" disabled={!kind || !chosen.length || !who} onClick={save}>
+            Anotar
+          </button>
+        </>
+      }
+    >
+      <div className="form-row">
+        <span className="form-label">¿Qué les dieron?</span>
+        <div className="choice-grid">
+          {TREATS.map((t) => (
+            <button key={t.value} type="button" className={`choice ${kind === t.value ? 'on' : ''}`} aria-pressed={kind === t.value} onClick={() => setKind(t.value)}>
+              <span aria-hidden="true">{t.icon}</span>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="form-row">
+        <span className="form-label">¿A quién?</span>
+        <div className="chips-row">
+          {model.dogs.map((d) => (
+            <label key={d.id} className="check">
+              <input type="checkbox" checked={Boolean(dogs[d.id])} onChange={(e) => setDogs((s) => ({ ...s, [d.id]: e.target.checked }))} />
+              <span>{d.name}</span>
+            </label>
+          ))}
+        </div>
+      </div>
     </Dialog>
   );
 }
@@ -521,44 +718,65 @@ function WalkDialog({ open, onClose, defaultWho }) {
   const { model, actions } = useData();
   const run = useRun();
   const [who, setWho] = useState(defaultWho);
-  const [minutes, setMinutes] = useState(30);
+  const [kind, setKind] = useState('corta');
+  const [minutes, setMinutes] = useState(15);
+  const [stairs, setStairs] = useState(true);
   const [ago, setAgo] = useState(0);
   const [dogs, setDogs] = useState(() => Object.fromEntries(model.dogs.map((d) => [d.id, { on: true, poop: null, detail: 'blanda' }])));
   const set = (id, patch) => setDogs((s) => ({ ...s, [id]: { ...s[id], ...patch } }));
   const chosen = model.dogs.filter((d) => dogs[d.id]?.on);
   const ready = who && chosen.length && chosen.every((d) => dogs[d.id].poop);
 
+  const pickKind = (k) => {
+    setKind(k);
+    setMinutes(k === 'larga' ? 45 : 15);
+  };
+
   const save = () =>
     run(async () => {
       await actions.logWalk({
         walkerId: who,
         minutes,
+        kind,
+        stairs: kind === 'larga' ? stairs : null,
         endedAt: new Date(Date.now() - ago * 60000),
         dogs: chosen.map((d) => ({ dog_id: d.id, poop: dogs[d.id].poop, poop_detail: dogs[d.id].poop === 'raro' ? dogs[d.id].detail : null })),
       });
       onClose();
-      setDogs(Object.fromEntries(model.dogs.map((d) => [d.id, { on: true, poop: null, detail: 'blanda' }])));
-    }, 'Paseo registrado');
+    }, kind === 'larga' ? 'Paseo largo registrado' : 'Salida registrada');
 
   return (
     <Dialog
       open={open}
       onClose={onClose}
-      title="Registrar paseo"
+      title="Registrar salida"
       footer={
         <>
           <button type="button" className="btn ghost" onClick={onClose}>
             Cancelar
           </button>
           <button type="button" className="btn primary" disabled={!ready} onClick={save}>
-            Guardar paseo
+            Guardar
           </button>
         </>
       }
     >
       <div className="form-row">
-        <span className="form-label">¿Quién los sacó?</span>
+        <span className="form-label">¿Quién las sacó?</span>
         <WhoPicker people={model.people} value={who} onChange={setWho} />
+      </div>
+      <div className="form-row">
+        <span className="form-label">¿Qué fue?</span>
+        <Segmented
+          size="sm"
+          label="Tipo de salida"
+          value={kind}
+          onChange={pickKind}
+          options={[
+            { value: 'corta', label: 'Salida corta (pis/caca)' },
+            { value: 'larga', label: 'Paseo largo' },
+          ]}
+        />
       </div>
       <div className="form-row">
         <span className="form-label">¿Cuánto duró?</span>
@@ -567,9 +785,15 @@ function WalkDialog({ open, onClose, defaultWho }) {
           label="Duración"
           value={minutes}
           onChange={setMinutes}
-          options={[15, 30, 45, 60].map((v) => ({ value: v, label: `${v} min` }))}
+          options={(kind === 'larga' ? [30, 45, 60, 90] : [5, 10, 15, 20]).map((v) => ({ value: v, label: `${v} min` }))}
         />
       </div>
+      {kind === 'larga' ? (
+        <label className="check form-row">
+          <input type="checkbox" checked={stairs} onChange={(e) => setStairs(e.target.checked)} />
+          <span>Subieron los 2 pisos por escalera</span>
+        </label>
+      ) : null}
       <div className="form-row">
         <span className="form-label">¿Cuándo volvieron?</span>
         <Segmented
@@ -620,23 +844,23 @@ function WalkDialog({ open, onClose, defaultWho }) {
   );
 }
 
-// ───────────────────────── agenda y tareas ─────────────────────────
+// ───────────────────────── agenda ─────────────────────────
 
-function AgendaCard() {
+function AgendaCard({ days = 7, title = 'Agenda', subtitle }) {
   const { model } = useData();
   const { person, today, go } = useApp();
-  const until = addDays(today, 7);
+  const until = addDays(today, days);
   const list = visibleEvents(model, person).filter((e) => {
     const d = dayOf(e.starts_at);
     return d >= today && d <= until;
   });
   return (
     <Card
-      title="Agenda"
-      subtitle="Hoy y los próximos 7 días"
+      title={title}
+      subtitle={subtitle ?? `Hoy y los próximos ${days} días`}
       actions={
         <button type="button" className="btn ghost xs" onClick={() => go('casa')}>
-          Ver todo
+          {person === 'casa' ? '+ Evento' : 'Ver todo'}
         </button>
       }
     >
@@ -647,84 +871,10 @@ function AgendaCard() {
           ))}
         </ul>
       ) : (
-        <p className="empty">Nada agendado esta semana.</p>
+        <p className="empty">Nada agendado.</p>
       )}
     </Card>
   );
-}
-
-export function ChoresCard({ who: whoProp, onWho }) {
-  const { model, actions } = useData();
-  const { person, today } = useApp();
-  const run = useRun();
-  const [whoLocal, setWhoLocal] = useState(person === 'casa' ? null : person);
-  const who = onWho ? whoProp : whoLocal;
-  const setWho = onWho ?? setWhoLocal;
-  const chores = choreStatus(model, today);
-  if (!chores.length) return null;
-  const due = chores.filter((c) => c.overdueBy != null && c.overdueBy >= 0).sort((a, b) => b.overdueBy - a.overdueBy);
-  const fresh = chores.filter((c) => c.overdueBy == null);
-  const ok = chores.filter((c) => c.overdueBy != null && c.overdueBy < 0).sort((a, b) => b.overdueBy - a.overdueBy);
-  const done = (c) => run(() => actions.choreDone(c.id, who), `${c.name}: hecho`);
-  const whoTitle = !who ? 'Elegí quién sos' : undefined;
-  return (
-    <Card
-      title="Tareas de la casa"
-      subtitle={due.length ? `${due.length} para hoy` : fresh.length === chores.length ? 'Marcá la primera vez que las hacen' : 'Todo al día'}
-      actions={person === 'casa' && !onWho ? <WhoPicker people={model.people} value={who} onChange={setWho} /> : null}
-    >
-      <ul className="chores">
-        {due.map((c) => (
-          <li key={c.id} className="chore due">
-            <span aria-hidden="true">{c.emoji}</span>
-            <div className="chore-body">
-              <div>{c.name}</div>
-              <div className="muted small">
-                {`Última vez ${agoDays(c.overdueBy + c.every_days)} · ${model.peopleById.get(c.last.done_by)?.short_name}`}
-                {c.overdueBy > 0 ? ` · ${c.overdueBy} ${c.overdueBy === 1 ? 'día' : 'días'} de atraso` : ''}
-              </div>
-            </div>
-            <button type="button" className="btn xs" disabled={!who} title={whoTitle} onClick={() => done(c)}>
-              Hecho
-            </button>
-          </li>
-        ))}
-        {fresh.map((c) => (
-          <li key={c.id} className="chore">
-            <span aria-hidden="true">{c.emoji}</span>
-            <div className="chore-body">
-              <div>{c.name}</div>
-              <div className="muted small">Cada {c.every_days === 1 ? 'día' : `${c.every_days} días`} · todavía sin registro</div>
-            </div>
-            <button type="button" className="btn ghost xs" disabled={!who} title={whoTitle} onClick={() => done(c)}>
-              Hecho
-            </button>
-          </li>
-        ))}
-        {ok.map((c) => (
-          <li key={c.id} className="chore">
-            <span aria-hidden="true">{c.emoji}</span>
-            <div className="chore-body">
-              <div>{c.name}</div>
-              <div className="muted small">
-                Toca en {-c.overdueBy} {-c.overdueBy === 1 ? 'día' : 'días'}
-                {c.last ? ` · la última la hizo ${model.peopleById.get(c.last.done_by)?.short_name}` : ''}
-              </div>
-            </div>
-            <button type="button" className="btn ghost xs" disabled={!who} title={whoTitle} onClick={() => done(c)}>
-              Hecho
-            </button>
-          </li>
-        ))}
-      </ul>
-    </Card>
-  );
-}
-
-function agoDays(n) {
-  if (n <= 0) return 'hoy';
-  if (n === 1) return 'ayer';
-  return `hace ${n} días`;
 }
 
 // ───────────────────────── tablero de la casa (iPad) ─────────────────────────
@@ -733,7 +883,7 @@ const WHO_RESET_MS = 5 * 60 * 1000;
 
 function HouseToday() {
   const { model } = useData();
-  const { today, now, go } = useApp();
+  const { today, now } = useApp();
   const [who, setWhoRaw] = useState(null);
   const [whoAt, setWhoAt] = useState(0);
   const setWho = (v) => {
@@ -749,14 +899,8 @@ function HouseToday() {
 
   const alerts = buildAlerts(model, { today, now, person: 'casa' });
   const minutes = minutesOf(now);
-  const until = addDays(today, 3);
-  const shared = visibleEvents(model, 'casa').filter((e) => {
-    const d = dayOf(e.starts_at);
-    return d >= today && d <= until;
-  });
   const walksToday = model.walks.filter((w) => w.day === today);
-  const perDog = model.dogs.map((d) => `${d.name} ${walksToday.filter((w) => w.dogs.some((x) => x.dog_id === d.id)).length}`);
-  const tomorrow = shared.filter((e) => dayOf(e.starts_at) === addDays(today, 1));
+  const tomorrow = visibleEvents(model, 'casa').filter((e) => dayOf(e.starts_at) === addDays(today, 1));
 
   return (
     <div className="stack">
@@ -765,51 +909,29 @@ function HouseToday() {
           <div className="clock">{fmtTime(now)}</div>
           <p className="clock-sub">{greeting(minutes)}</p>
         </div>
+        <AlertList alerts={alerts} />
         <div className="who-box">
           <span className="form-label">¿Quién está usando el iPad?</span>
           <WhoPicker people={model.people} value={who} onChange={setWho} />
-          <span className="muted small">{who ? 'Se borra solo a los 5 minutos.' : 'Para anotar paseos, comidas y tareas.'}</span>
+          <span className="muted small">{who ? 'Se borra solo a los 5 minutos.' : 'Para anotar salidas, tarritos y premios.'}</span>
         </div>
       </section>
 
-      <AlertList alerts={alerts} />
-
-      <div className="grid two">
+      <div className="kiosk-grid">
         {model.people.map((p) => (
           <CheckinsCard key={p.id} personId={p.id} shared />
         ))}
-      </div>
-
-      <div className="grid today-grid">
-        <DogsCard big who={who} onWho={setWho} />
-        <div className="stack">
-          <Card
-            title="Agenda compartida"
-            subtitle="Hoy y los próximos 3 días"
-            actions={
-              <button type="button" className="btn ghost xs" onClick={() => go('casa')}>
-                + Evento
-              </button>
-            }
-          >
-            {shared.length ? (
-              <ul className="events">
-                {shared.map((e) => (
-                  <EventRow key={e.id} ev={e} today={today} people={model.peopleById} />
-                ))}
-              </ul>
-            ) : (
-              <p className="empty">Sin eventos en los próximos días.</p>
-            )}
-          </Card>
-          <ChoresCard who={who} onWho={setWho} />
+        <div className="stack kiosk-side">
+          <DogsCard big who={who} onWho={setWho} />
+          <AgendaCard days={3} title="Agenda compartida" />
         </div>
       </div>
 
       {minutes >= 21 * 60 ? (
         <Card title="Cierre del día">
           <p>
-            Hoy: {perDog.join(', ')} {walksToday.length === 1 ? 'paseo' : 'paseos'}.
+            Hoy: {plural(walksToday.length, 'salida', 'salidas')} ({plural(walksToday.filter((w) => w.kind === 'larga').length, 'larga', 'largas')}),{' '}
+            {plural(model.refills.filter((r) => r.day === today).length, 'carga de tarritos', 'cargas de tarritos')}.
             {tomorrow.length ? ` Mañana: ${tomorrow.map((e) => e.title).join(', ')}.` : ''}
           </p>
         </Card>
