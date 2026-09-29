@@ -170,7 +170,7 @@ export function WalkDialog({ kind: initialKind, who: initialWho, onClose }) {
   const [kind, setKind] = useState(initialKind);
   const [minutes, setMinutes] = useState(initialKind === 'larga' ? 45 : 10);
   const [ago, setAgo] = useState(0);
-  const [stairs, setStairs] = useState(true);
+  const [stairs, setStairs] = useState(false);
   const [dogs, setDogs] = useState(() => Object.fromEntries(model.dogs.map((d) => [d.id, { pee: false, poop: false, rare: false, detail: 'blanda', note: '' }])));
   const set = (id, patch) => setDogs((s) => ({ ...s, [id]: { ...s[id], ...patch } }));
   const pickKind = (k) => {
