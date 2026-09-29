@@ -19,6 +19,7 @@ Ideas sueltas para Vestigia, con su costo, de qué dependen y qué quedó defini
 | 4 | [Notificaciones en iPhone y iPad](#4--notificaciones-en-iphone-y-ipad) | Medio | Poco | Cuentas personales · sincronizar dispositivos | 💡 |
 | 5 | [Quién está en casa](#5--quién-está-en-casa) | Medio | Privacidad | Sincronizar dispositivos | 💡 |
 | 6 | [Estado de ánimo](#6--estado-de-ánimo) | Bajo a medio | Privacidad | — | 💡 |
+| 7 | [Ambientes: producción, testing y POC](#7--ambientes-producción-testing-y-poc) | Medio | Sí (base de producción) | — | 💡 |
 
 ## Orden sugerido
 
@@ -146,3 +147,29 @@ La pantalla y la tabla ya existen y están apagadas (`FEATURES.mood`). Quedó fu
 **Abierto:**
 
 - [ ] Que los dos estén de acuerdo en registrarlo y en qué comparte cada uno.
+
+## 7 · Ambientes: producción, testing y POC
+
+Tres versiones de la app, todas a partir del código de Vestigia (la prueba de concepto vieja, `tracker_demo`, quedó desactualizada). Costo medio para armarlo; después, cada idea se programa una sola vez.
+
+| Ambiente | Para qué | Código | Datos | Dirección (propuesta) |
+|---|---|---|---|---|
+| Producción | La casa, el iPad de todos los días | Rama `main` | Base real (proyecto vestigia) | `/vestigia/` |
+| Testing | La próxima versión, hasta probarla bien | Rama `next` | Segundo proyecto de Supabase, con datos de prueba | `/vestigia/test/` |
+| POC | Todas las ideas funcionando, sin conectarse a los dispositivos | Rama `next`, todo prendido | Sin base: 3 meses ficticios generados en el navegador, relativos a hoy | `/vestigia/demo/` |
+
+- **Recorrido de una idea:** se programa con su interruptor → se ve en la POC → se decide → se prende en testing → se prueba → pasa a `main`.
+- **POC sin base:** entra en el cupo gratis de Supabase (2 proyectos), cada visitante tiene su copia con un botón para volver a empezar, no se pausa por inactividad. Notificaciones y "quién está en casa" se simulan en pantalla; un selector permite ver cada animación del clima.
+- **Testing:** vacía el segundo proyecto de Supabase (hoy con los datos de la demo vieja) y necesita su propia cuenta Casa.
+- **Cambios de base:** primero en testing, después en producción, con una copia de seguridad antes ([rollback](rollback.md)).
+- **Cuidado:** las tres direcciones comparten dominio; hay que separar lo que cada una guarda en el navegador (sesión, tema, visitas).
+- **Mejora propuesta:** llevar al repo las pruebas automáticas usadas para la v0.1.1 (capturas en tamaño iPad y flujos) y correrlas en cada cambio de `next`.
+
+**Por ahora:** los cambios se aplican directo en producción, con etiquetas por versión y copia de la base para poder volver atrás ([rollback](rollback.md)).
+
+**Abierto:**
+
+- [ ] Direcciones de testing y POC (subcarpetas de `/vestigia/` u otro repositorio).
+- [ ] Confirmar vaciar el segundo proyecto de Supabase para testing.
+- [ ] Si se suman las pruebas automáticas.
+- [ ] Qué pasa con `tracker_demo`: archivar con aviso o borrar.
