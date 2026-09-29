@@ -19,8 +19,8 @@ Volver atrás **no reescribe la historia**: se agrega un commit nuevo que deja l
 
 ```bash
 # Volver toda la app a una versión (deja los documentos como están)
-git fetch origin
-git checkout origin/release/v0.1 -- src index.html public package.json
+git fetch origin release/v0.1
+git checkout FETCH_HEAD -- src index.html public package.json
 git commit -m "Rollback a v0.1"
 git push origin main
 
@@ -29,7 +29,7 @@ git revert <commit>
 git push origin main
 ```
 
-Para volver a avanzar después, lo mismo con la rama nueva (`git checkout origin/release/v0.1.1 -- src index.html public package.json`).
+Para volver a avanzar después, lo mismo con la rama nueva (`git fetch origin release/v0.1.1` y `git checkout FETCH_HEAD -- src index.html public package.json`).
 
 Verificar que la publicación terminó bien en la pestaña **Actions** del repositorio.
 
