@@ -4,12 +4,14 @@ Producción es una sola: https://solasantiago.github.io/vestigia/ con la base de
 
 ## Versiones marcadas
 
-Cada versión publicada tiene una etiqueta (tag) en git, para saber exactamente a qué volver.
+Cada versión publicada queda marcada con una rama `release/…` que no se toca más, para saber exactamente a qué volver. Esas ramas no se publican: GitHub Pages solo publica `main`.
 
-| Etiqueta | Qué es | ¿Funciona con la base actual? |
-|---|---|---|
-| `v0.1` | El iPad de la casa (kiosco original) | ✅ Sí, probado el 29/9/2026 |
-| `v0.1.1` | Tablero del iPad: resumen, semáforo, kiosco en 3 columnas (incluye la escalera destildada) | ✅ Es la de hoy |
+| Rama | Commit | Qué es | ¿Funciona con la base actual? |
+|---|---|---|---|
+| `release/v0.1` | `f44bb34` | El iPad de la casa (kiosco original) | ✅ Sí, probado el 29/9/2026 |
+| `release/v0.1.1` | `9af0729` | Tablero del iPad: resumen, semáforo, kiosco en 3 columnas (incluye la escalera destildada) | ✅ Es la de hoy |
+
+Al publicar una versión nueva se crea su rama: `git push origin main:refs/heads/release/v0.2`.
 
 ## 1. Código
 
@@ -17,7 +19,8 @@ Volver atrás **no reescribe la historia**: se agrega un commit nuevo que deja l
 
 ```bash
 # Volver toda la app a una versión (deja los documentos como están)
-git checkout v0.1 -- src index.html public package.json
+git fetch origin
+git checkout origin/release/v0.1 -- src index.html public package.json
 git commit -m "Rollback a v0.1"
 git push origin main
 
@@ -26,7 +29,7 @@ git revert <commit>
 git push origin main
 ```
 
-Para volver a avanzar después, lo mismo con la etiqueta nueva (`git checkout v0.1.1 -- src index.html public package.json`).
+Para volver a avanzar después, lo mismo con la rama nueva (`git checkout origin/release/v0.1.1 -- src index.html public package.json`).
 
 Verificar que la publicación terminó bien en la pestaña **Actions** del repositorio.
 

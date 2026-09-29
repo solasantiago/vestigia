@@ -165,7 +165,7 @@ Tres versiones de la app, todas a partir del código de Vestigia (la prueba de c
 - **Cuidado:** las tres direcciones comparten dominio; hay que separar lo que cada una guarda en el navegador (sesión, tema, visitas).
 - **Mejora propuesta:** llevar al repo las pruebas automáticas usadas para la v0.1.1 (capturas en tamaño iPad y flujos) y correrlas en cada cambio de `next`.
 
-**Por ahora:** los cambios se aplican directo en producción, con etiquetas por versión y copia de la base para poder volver atrás ([rollback](rollback.md)).
+**Por ahora:** los cambios se aplican directo en producción, con una rama `release/…` por versión y copia de la base para poder volver atrás ([rollback](rollback.md)).
 
 **Abierto:**
 

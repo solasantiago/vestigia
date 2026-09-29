@@ -97,7 +97,7 @@ npm run dev
 npm run build
 ```
 
-Cada push a `main` compila y publica en GitHub Pages (`.github/workflows/pages.yml`). Cada versión publicada tiene su etiqueta en git; para volver atrás, ver [Rollback](docs/rollback.md).
+Cada push a `main` compila y publica en GitHub Pages (`.github/workflows/pages.yml`). Cada versión publicada queda marcada con una rama `release/…`; para volver atrás, ver [Rollback](docs/rollback.md).
 
 | Carpeta | Contenido |
 |---|---|
