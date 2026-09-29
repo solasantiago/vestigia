@@ -3,7 +3,7 @@
 Los rastros de cada día en casa: check-ins de hábitos, paseos, caca y comida de Mocka y Honey, tareas y agenda compartida. Registra datos reales desde el **domingo 27 de septiembre de 2026**.
 
 🌐 **Web:** https://solasantiago.github.io/vestigia/
-📄 [Documento funcional](docs/documento-funcional.md) · 🗺️ [Versiones](docs/versiones.md) · 🥣 [Alimento](docs/alimento.md)
+📄 [Documento funcional](docs/documento-funcional.md) · 🗺️ [Versiones](docs/versiones.md) · 💡 [Ideas pendientes](docs/ideas.md) · 🥣 [Alimento](docs/alimento.md)
 
 La prueba de concepto con datos de ejemplo vive aparte, en [tracker_demo](https://github.com/solasantiago/tracker_demo).
 

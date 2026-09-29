@@ -13,7 +13,7 @@ Cada versión suma una sola cosa nueva, para acostumbrarse de a poco. Las próxi
 
 **Para pasar a la siguiente:** unas dos semanas registrando salidas y pastillas sin que se olviden.
 
-Anotado para más adelante: ficha de cada perra (peso, veterinario), medir la ración (tazas por carga) y ajustar las reglas del semáforo desde la app.
+Las ideas sueltas, con su costo y lo que ya se definió, están en [Ideas pendientes](ideas.md). Anotado para más adelante: ficha de cada perra (peso, veterinario), medir la ración (tazas por carga) y ajustar las reglas del semáforo desde la app.
 
 ## v0.1.1 — El tablero del iPad ✅ (27/9/2026)
 
