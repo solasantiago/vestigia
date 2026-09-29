@@ -15,7 +15,7 @@ Al publicar una versión nueva se crea su rama: `git push origin main:refs/heads
 
 ## 1. Código
 
-Volver atrás **no reescribe la historia**: se agrega un commit nuevo que deja la app como estaba en la etiqueta, y GitHub Pages la publica sola en ~1 minuto.
+Volver atrás **no reescribe la historia**: se agrega un commit nuevo que deja la app como estaba en esa versión, y GitHub Pages la publica sola en ~1 minuto.
 
 ```bash
 # Volver toda la app a una versión (deja los documentos como están)
