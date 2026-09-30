@@ -25,6 +25,12 @@ Las ideas sueltas, con su costo y lo que ya se definió, están en [Ideas pendie
 - **El día cierra a las 5**, **modo noche** de 1 a 7 con "Entendido", y **modo visitas** que oculta las pastillas del resumen.
 - La bolsa de alimento y el historial pasan a la pestaña Perros; la bolsa que ya estaba empezada no se usa para calcular.
 
+## v0.1.2 — Un paseo largo por día ✅ (30/9/2026)
+
+- La meta pasa a **1 paseo largo por día** (antes 2): atención a las 19 si no hubo ninguno, urgente a las 23.
+- Los textos siguen a la meta de la casa ("las 4 salidas y el paseo largo").
+- Al anotar un paseo largo, la escalera arranca destildada.
+
 ## v0.2 — Cada uno en su celular (propuesta)
 
 - Cuentas de Mica y de Santi, con la privacidad de la §7 del documento funcional.

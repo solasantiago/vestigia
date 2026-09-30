@@ -9,7 +9,8 @@ Cada versión publicada queda marcada con una rama `release/…` que no se toca 
 | Rama | Commit | Qué es | ¿Funciona con la base actual? |
 |---|---|---|---|
 | `release/v0.1` | `f44bb34` | El iPad de la casa (kiosco original) | ✅ Sí, probado el 29/9/2026 |
-| `release/v0.1.1` | `9af0729` | Tablero del iPad: resumen, semáforo, kiosco en 3 columnas (incluye la escalera destildada) | ✅ Es la de hoy |
+| `release/v0.1.1` | `9af0729` | Tablero del iPad: resumen, semáforo, kiosco en 3 columnas (incluye la escalera destildada) | ✅ Sí (con la meta de 1 paseo largo muestra "Los 1, antes de las 23") |
+| `release/v0.1.2` | ver rama | Un paseo largo por día | ✅ Es la de hoy |
 
 Al publicar una versión nueva se crea su rama: `git push origin main:refs/heads/release/v0.2`.
 
@@ -37,6 +38,7 @@ Verificar que la publicación terminó bien en la pestaña **Actions** del repos
 
 **Regla:** los cambios de base se hacen de forma que la versión anterior siga funcionando (agregar columnas y tablas, no borrarlas ni renombrarlas). Así, volver atrás el código alcanza.
 
+- **v0.1.2 → v0.1.1:** volver la meta a 2 paseos largos si se quiere: `update public.household_settings set long_walks_goal = 2;`
 - **v0.1.1 → v0.1:** no hay que tocar la base. Si alguna vez se quiere borrar lo que agregó la v0.1.1, está en [`supabase/rollback/v0.1.1_down.sql`](../supabase/rollback/v0.1.1_down.sql) — borra datos, no hace falta.
 - **Antes de cualquier cambio delicado en la base,** tomar una copia desde el SQL editor de Supabase:
 

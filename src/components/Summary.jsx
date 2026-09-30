@@ -17,7 +17,7 @@ import {
   tsToDayMin,
 } from '../lib/dates.js';
 import { visibleEvents } from '../lib/metrics.js';
-import { computeDay, nightInfo, rulesOf, weekInfo, worst } from '../lib/status.js';
+import { computeDay, goalsText, nightInfo, rulesOf, weekInfo, worst } from '../lib/status.js';
 import { CATEGORY } from '../views/common.jsx';
 import { Avatar } from './ui.jsx';
 import { FootIcon, FootShape, HouseTrail, Mark, PawIcon, PawShape } from './prints.jsx';
@@ -160,7 +160,7 @@ function StatusSlide({ st, visitas, calm, model }) {
   tiles.push(
     <section key="long" className={`tile ${lv(st.long.level, { calm })}`}>
       <header className="tile-head">
-        <span className="tile-title">🌳 Paseos largos</span>
+        <span className="tile-title">🌳 {st.long.goal === 1 ? 'Paseo largo' : 'Paseos largos'}</span>
         <StatusChip level={st.long.level} />
       </header>
       <div className="tile-big">
@@ -459,10 +459,10 @@ function WeekSlide({ model, now, visitas }) {
         <li>
           🐾{' '}
           {wk.walkStreak
-            ? `${wk.walkStreak === 1 ? '1 día' : `${wk.walkStreak} días seguidos`} con las 4 salidas y los 2 paseos largos`
+            ? `${wk.walkStreak === 1 ? '1 día' : `${wk.walkStreak} días seguidos`} con ${goalsText(model)}`
             : wk.completeDays
-              ? 'Hoy se pueden volver a completar las 4 salidas y los 2 paseos largos'
-              : 'Hoy puede ser el primer día con las 4 salidas y los 2 paseos largos'}
+              ? `Hoy se pueden volver a completar ${goalsText(model)}`
+              : `Hoy puede ser el primer día con ${goalsText(model)}`}
         </li>
         {!visitas
           ? wk.pillStreaks

@@ -47,7 +47,7 @@ Las salidas se miden de 8 a 2. Fuera de ese horario nada titila.
 |---|---|---|
 | Primera salida (la meta es antes de las 10) | A las 9, si no salieron | A las 11, si no salieron |
 | Próxima salida (por ritmo, para llegar a las 4 antes de las 2) | Cuando llega la hora sugerida | 1 h 30 min después |
-| Paseos largos (2 por día) | Ninguno a las 19 | Falta alguno a las 23 |
+| Paseo largo (1 por día, desde el 30/9; antes eran 2) | Ninguno a las 19 | Ninguno a las 23 |
 | Caca de cada una | 18 h sin | 24 h sin |
 | Pis de cada una (horas de 8 a 2) | 6 h sin | — |
 

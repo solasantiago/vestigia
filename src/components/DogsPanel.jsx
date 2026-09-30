@@ -57,7 +57,7 @@ export function DogsPanel({ st, who, calm = false }) {
           <span className="dp-note">{w.text}</span>
         </div>
         <div className={`dp-stat lv-${long.level}`}>
-          <span className="dp-label">Paseos largos</span>
+          <span className="dp-label">{long.goal === 1 ? 'Paseo largo' : 'Paseos largos'}</span>
           <span className="dp-value">
             {long.count}
             <small> de {long.goal}</small>

@@ -9,7 +9,7 @@ export const SUPABASE_ANON_KEY =
 export const TZ = 'America/Argentina/Buenos_Aires';
 
 export const APP_NAME = 'Vestigia';
-export const APP_VERSION = '0.1.1';
+export const APP_VERSION = '0.1.2';
 
 // El día de la casa empieza a las 05:00: lo que pasa entre las 0 y las 5 cuenta para el día anterior.
 export const DAY_START_HOUR = 5;

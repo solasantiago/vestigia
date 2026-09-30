@@ -81,6 +81,12 @@ function goals(model) {
   return { walks: model?.settings?.walks_goal ?? 4, long: model?.settings?.long_walks_goal ?? 2 };
 }
 
+/** "las 4 salidas y el paseo largo" / "las 4 salidas y los 2 paseos largos", según las metas de la casa. */
+export function goalsText(model) {
+  const g = goals(model);
+  return `las ${g.walks} salidas y ${g.long === 1 ? 'el paseo largo' : `los ${g.long} paseos largos`}`;
+}
+
 const tsOf = (w) => new Date(w.ended_at ?? w.started_at).getTime();
 
 /** Minutos "activos" (dentro del horario de salidas de cada día) entre dos momentos. */
@@ -209,10 +215,14 @@ export function longState(model, rules, day, dm, walks) {
   const alert = hhmmToDayMin(rules.long_walks.alert);
   let level;
   let text;
-  if (n >= goal) [level, text] = ['ok', 'Cumplidos'];
-  else if (dm >= alert) [level, text] = ['alert', `Falta ${goal - n === 1 ? 'uno' : goal - n}`];
+  if (n >= goal) [level, text] = ['ok', goal === 1 ? 'Cumplido' : 'Cumplidos'];
+  else if (dm >= alert) [level, text] = ['alert', goal - n === 1 ? 'Falta uno' : `Faltan ${goal - n}`];
   else if (n === 0 && dm >= warn) [level, text] = ['warn', `Todavía ninguno · ${beforeHour(alert)}`];
-  else [level, text] = [n ? 'ok' : 'off', `${n ? 'El otro' : goal === 2 ? 'Los dos' : `Los ${goal}`}, ${beforeHour(alert)}`];
+  else {
+    const left = goal - n;
+    const who = goal === 1 ? 'Uno' : left === 1 ? 'El otro' : left === 2 && !n ? 'Los dos' : `${n ? 'Faltan' : 'Los'} ${left}`;
+    [level, text] = [n ? 'ok' : 'off', `${who} ${beforeHour(alert)}`];
+  }
   return { id: 'long', level, text, count: n, goal };
 }
 

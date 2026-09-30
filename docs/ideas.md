@@ -20,6 +20,7 @@ Ideas sueltas para Vestigia, con su costo, de qué dependen y qué quedó defini
 | 5 | [Quién está en casa](#5--quién-está-en-casa) | Medio | Privacidad | Sincronizar dispositivos | 💡 |
 | 6 | [Estado de ánimo](#6--estado-de-ánimo) | Bajo a medio | Privacidad | — | 💡 |
 | 7 | [Ambientes: producción, testing y POC](#7--ambientes-producción-testing-y-poc) | Medio | Sí (base de producción) | — | 💡 |
+| 8 | [Tarritos con "¿cuándo?"](#8--tarritos-con-cuándo) | Bajo | No | — | ✅ |
 
 ## Orden sugerido
 
@@ -173,3 +174,15 @@ Tres versiones de la app, todas a partir del código de Vestigia (la prueba de c
 - [ ] Confirmar vaciar el segundo proyecto de Supabase para testing.
 - [ ] Si se suman las pruebas automáticas.
 - [ ] Qué pasa con `tracker_demo`: archivar con aviso o borrar.
+
+## 8 · Tarritos con "¿cuándo?"
+
+Hoy una carga de tarritos queda con la hora en que se toca el botón y solo se puede deshacer durante 10 minutos. Si se anota tarde, la hora queda mal y hay que corregirla a mano en la base (pasó el 29/9: una carga de las 18:20 quedó a las 0:16).
+
+- Sumar "¿cuándo?" al anotar: **Recién · Hace 1 h · Otra hora…**, como en las salidas.
+- Costo bajo: no toca la base (la hora ya se guarda), solo el botón y un diálogo chico.
+- Posible extensión: lo mismo para premios.
+
+**Definido:**
+
+- Se hace (pedido el 30/9).
