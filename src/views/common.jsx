@@ -3,6 +3,7 @@ import { Chip } from '../components/ui.jsx';
 
 export const CATEGORY = {
   facu: { label: 'Facu', icon: '📚' },
+  trabajo: { label: 'Trabajo', icon: '💼' },
   salud: { label: 'Salud', icon: '🩺' },
   perros: { label: 'Perros', icon: '🐾' },
   social: { label: 'Social', icon: '🎉' },
