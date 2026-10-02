@@ -11,7 +11,7 @@ Cada versión publicada queda marcada con una rama `release/…` que no se toca 
 | `release/v0.1` | `f44bb34` | El iPad de la casa (kiosco original) | ✅ Sí, probado el 29/9/2026 |
 | `release/v0.1.1` | `9af0729` | Tablero del iPad: resumen, semáforo, kiosco en 3 columnas (incluye la escalera destildada) | ✅ Sí (con la meta de 1 paseo largo muestra "Los 1, antes de las 23") |
 | `release/v0.1.2` | `f091b1c` | Un paseo largo por día | ✅ Sí (no muestra los tratamientos ni el ícono de Trabajo) |
-| `release/v0.1.3` | ver rama | Tratamientos de las perras (colirio) y categoría Trabajo | ✅ Es la de hoy |
+| `release/v0.1.3` | `6196700` | Tratamientos de las perras (colirio) y categoría Trabajo | ✅ Es la de hoy |
 
 Al publicar una versión nueva se crea su rama: `git push origin main:refs/heads/release/v0.2`.
 
