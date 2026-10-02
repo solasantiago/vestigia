@@ -4,10 +4,10 @@ import { useData, useRun } from '../lib/data.jsx';
 import { fmtDayCompact, fmtSpan, fmtTime } from '../lib/dates.js';
 import { fmtKg } from '../lib/format.js';
 import { foodBag } from '../lib/metrics.js';
-import { worst } from '../lib/status.js';
+import { medWhen, worst } from '../lib/status.js';
 import { Dialog, Segmented, WhoPicker } from './ui.jsx';
 import { PawIcon } from './prints.jsx';
-import { lv, StatusChip } from './Semaforo.jsx';
+import { Dot, lv, StatusChip } from './Semaforo.jsx';
 
 // Mocka y Honey: estado del día y botones grandes para anotar.
 // Salen siempre las dos juntas; por cada una se marca pis, caca y, si hace falta, "algo raro".
@@ -83,6 +83,8 @@ export function DogsPanel({ st, who, calm = false }) {
         ))}
       </ul>
 
+      {st.meds?.length ? <MedsBlock meds={st.meds} who={who} nowTs={st.nowTs} /> : null}
+
       <div className="dp-actions">
         <button type="button" className="btn big primary" disabled={needWho} title={whyDisabled} onClick={() => setWalk('corta')}>
           <PawIcon size={20} /> Salida corta
@@ -156,6 +158,70 @@ export function DogsPanel({ st, who, calm = false }) {
       {walk ? <WalkDialog kind={walk} who={who} onClose={() => setWalk(null)} /> : null}
       {treatOpen ? <TreatDialog who={who} onClose={() => setTreatOpen(false)} /> : null}
     </div>
+  );
+}
+
+// ───────────── tratamientos (colirio, etc.) ─────────────
+
+export const MED_ICON = '💊';
+
+/** Una fila por tratamiento activo: la dosis que toca con un botón, o cuándo es la próxima. */
+function MedsBlock({ meds, who, nowTs }) {
+  const { model, actions } = useData();
+  const run = useRun();
+  const name = (id) => model.peopleById.get(id)?.short_name ?? '';
+  const needWho = !who;
+  return (
+    <ul className="dp-meds">
+      {meds.map((m) => {
+        const target = m.current ?? m.next;
+        const last = m.lastGiven;
+        const canUndo = last && nowTs - new Date(last.given_at).getTime() < RECENT_MS;
+        return (
+          <li key={m.id} className={`dp-med lv-${m.level}`} data-dog={m.dog.id}>
+            <div className="dp-med-text">
+              <span className="dp-med-name">
+                <span aria-hidden="true">{MED_ICON}</span> {m.name} · {m.dog.name}
+                <small>
+                  {m.given} de {m.total}
+                </small>
+              </span>
+              <span className="dp-med-state">
+                <Dot level={m.level} /> {m.text}
+              </span>
+              {last ? (
+                <span className="dp-med-last">
+                  Última: {fmtTime(last.given_at)} {name(last.given_by)}
+                  {canUndo ? (
+                    <button type="button" className="link-btn" onClick={() => run(() => actions.undoMed(last.id), 'Aplicación borrada')}>
+                      deshacer
+                    </button>
+                  ) : null}
+                </span>
+              ) : null}
+            </div>
+            {target ? (
+              <div className="dp-med-actions">
+                <button
+                  type="button"
+                  className={`btn ${m.current ? 'yes' : 'ghost xs'}`}
+                  disabled={needWho}
+                  title={needWho ? 'Elegí quién sos para anotar' : undefined}
+                  onClick={() => run(() => actions.giveMed(target.id, who), `${m.name} anotado`)}
+                >
+                  {m.current ? 'Aplicado ✓' : `Ya apliqué la de ${medWhen(target.due, nowTs).replace(/^a /, '')}`}
+                </button>
+                {m.current ? (
+                  <button type="button" className="btn ghost xs" disabled={needWho} onClick={() => run(() => actions.skipMed(target.id), 'Anotado: no se aplicó')}>
+                    No se aplicó
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

@@ -192,6 +192,18 @@ export function DataProvider({ children }) {
         unwrap(await supabase.from('dog_treats').insert({ kind, given_by: byId, dog_ids: dogIds, given_at: new Date().toISOString() }));
         await reload('dog_treats');
       },
+      async giveMed(id, byId) {
+        unwrap(await supabase.from('dog_meds').update({ given_at: new Date().toISOString(), given_by: byId, skipped: false }).eq('id', id));
+        await reload('dog_meds');
+      },
+      async skipMed(id) {
+        unwrap(await supabase.from('dog_meds').update({ given_at: null, given_by: null, skipped: true }).eq('id', id));
+        await reload('dog_meds');
+      },
+      async undoMed(id) {
+        unwrap(await supabase.from('dog_meds').update({ given_at: null, given_by: null, skipped: false }).eq('id', id));
+        await reload('dog_meds');
+      },
       async undoTreat(id) {
         unwrap(await supabase.from('dog_treats').delete().eq('id', id));
         await reload('dog_treats');

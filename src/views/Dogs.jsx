@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 import { useKiosk } from '../lib/kiosk.jsx';
-import { computeDay } from '../lib/status.js';
+import { computeDay, medsState, rulesOf } from '../lib/status.js';
 import { useApp } from '../lib/appctx.js';
 import { useData } from '../lib/data.jsx';
-import { addDays, calDayOf, calTodayISO, fmtDayCompact, fmtDayShort, fmtDuration, fmtTime, range } from '../lib/dates.js';
+import { addDays, calDayOf, calTodayISO, fmtDayCompact, fmtDayShort, fmtDuration, fmtTime, fmtWeekday, range } from '../lib/dates.js';
 import { fmt1, fmtInt, fmtSigned } from '../lib/format.js';
 import { feedingPerDay, mean, poopPerDay, walkHourHistogram, walksPerDay } from '../lib/metrics.js';
 import { ChartCard } from '../components/charts/core.jsx';
@@ -49,8 +49,39 @@ export default function Dogs() {
   const days90 = range(start90, today);
   const upcoming = model.events.filter((e) => e.category === 'perros' && calDayOf(e.starts_at) >= calToday).slice(0, 4);
 
+  const meds = useMemo(() => medsState(model, rulesOf(model), new Date(now).getTime()), [model, now]);
+  const MED_STATUS = { given: '✓ Aplicado', skipped: 'No se aplicó', missed: 'Se pasó', current: 'Toca ahora', upcoming: 'Pendiente' };
+
   return (
     <div className="stack">
+      {meds.map((m) => (
+        <Card key={m.id} title={`💊 ${m.name} · ${m.dog.name}`} subtitle={`${m.given} de ${m.total} aplicaciones · ${m.text}`}>
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Programada</th>
+                  <th>Estado</th>
+                  <th>Aplicada</th>
+                  <th>Quién</th>
+                </tr>
+              </thead>
+              <tbody>
+                {m.doses.map((d) => (
+                  <tr key={d.id} className={`med-row med-${d.status}`}>
+                    <td>
+                      <span className="cap-inline">{fmtWeekday(calDayOf(d.due), 'short')}</span> {Number(calDayOf(d.due).slice(8, 10))} · {fmtTime(d.due)}
+                    </td>
+                    <td>{MED_STATUS[d.status]}</td>
+                    <td>{d.given_at ? `${calDayOf(d.given_at) === calDayOf(d.due) ? '' : `${fmtWeekday(calDayOf(d.given_at), 'short')} `}${fmtTime(d.given_at)}` : '—'}</td>
+                    <td>{d.given_by ? model.peopleById.get(d.given_by)?.short_name : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      ))}
       {days.length < 7 ? (
         <p className="lede">
           Vestigia registra desde el {Number(startDate.slice(8, 10))}/{Number(startDate.slice(5, 7))}: con cada salida, carga de tarritos y premio, estos gráficos se van llenando.

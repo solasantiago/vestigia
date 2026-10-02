@@ -231,6 +231,18 @@ function DogTile({ d, calm }) {
           <span className="trow-text">{d.lastPee ? `hace ${fmtSpan(d.peeAgoMin)}` : 'sin registro'}</span>
         </li>
       </ul>
+      {d.meds?.length ? (
+        <ul className="trows">
+          {d.meds.map((m) => (
+            <li key={m.id} className={`trow med lv-${m.level}`}>
+              <Dot level={m.level} />
+              <span className="trow-text">
+                <strong>💊 {m.name}:</strong> {m.text}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
       <div className="tile-line">
         Hoy: {d.pees} pis · {d.poopsToday} caca{d.rareTwice ? ' · algo raro 2 veces seguidas' : ''}
       </div>

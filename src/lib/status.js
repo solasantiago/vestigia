@@ -21,6 +21,8 @@ import {
   fmtHour,
   fmtSpan,
   fmtTime,
+  fmtWeekday,
+  calDayOf,
   fromHour,
   hhmmToDayMin,
   minutesOf,
@@ -62,6 +64,8 @@ export const DEFAULT_RULES = {
   poop_hours: { warn: 18, alert: 24 },
   pee_hours: { warn: 6 },
   ipad: { slide_sec: 12, idle_sec: 300, after_save_sec: 60, night: { from: '01:00', to: '07:00' } },
+  // Tratamientos: recordatorio 15 min antes, naranja a los 30 min de atraso, rojo a los 90; a las 6 h se da por perdida.
+  meds: { due_before_min: 15, warn_after_min: 30, alert_after_min: 90, miss_after_min: 360 },
 };
 
 function merge(base, over) {
@@ -273,6 +277,82 @@ export function dogState(model, rules, dog, day, dm, nowTs) {
   };
 }
 
+// ───────────── tratamientos ─────────────
+
+/** "a las 17:00" si falta poco; "sáb 08:00" si es más adelante. */
+export function medWhen(ts, nowTs) {
+  const t = new Date(ts).getTime();
+  if (Math.abs(t - nowTs) < 12 * 3600000) return `a las ${fmtTime(t)}`;
+  return `${fmtWeekday(calDayOf(t), 'short')} ${fmtTime(t)}`;
+}
+
+/**
+ * Tratamientos de las perras: cada aplicación programada es una fila de `model.meds`.
+ * Estado de cada dosis: given · skipped · missed (se pasó) · current (toca) · upcoming.
+ */
+export function medsState(model, rules, nowTs) {
+  const r = rules.meds;
+  const groups = new Map();
+  for (const m of model.meds ?? []) {
+    const key = `${m.dog_id}|${m.name}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(m);
+  }
+  const out = [];
+  for (const [key, rows] of groups) {
+    const dog = model.dogs.find((d) => d.id === rows[0].dog_id);
+    if (!dog) continue;
+    const doses = rows.map((m, i) => {
+      const due = new Date(m.due_at).getTime();
+      const nextDue = rows[i + 1] ? new Date(rows[i + 1].due_at).getTime() : null;
+      let status;
+      if (m.given_at) status = 'given';
+      else if (m.skipped) status = 'skipped';
+      else if ((nextDue != null && nextDue - r.due_before_min * 60000 <= nowTs) || nowTs > due + r.miss_after_min * 60000 || rows.slice(i + 1).some((x) => x.given_at)) status = 'missed';
+      else if (due - r.due_before_min * 60000 <= nowTs) status = 'current';
+      else status = 'upcoming';
+      return { ...m, due, status };
+    });
+    const current = doses.find((d) => d.status === 'current') ?? null;
+    const next = doses.find((d) => d.status === 'upcoming') ?? null;
+    const past = doses.filter((d) => d.status !== 'upcoming' && d.status !== 'current');
+    const lastPast = past[past.length - 1] ?? null;
+    const lastGiven = [...doses].reverse().find((d) => d.status === 'given') ?? null;
+    const lastDue = doses[doses.length - 1].due;
+    let level;
+    let text;
+    if (current) {
+      const late = (nowTs - current.due) / 60000;
+      level = late >= r.alert_after_min ? 'alert' : late >= r.warn_after_min ? 'warn' : 'due';
+      text = late >= r.warn_after_min ? `Atrasado desde las ${fmtTime(current.due)}` : `Toca ahora (${fmtTime(current.due)})`;
+    } else if (next) {
+      level = !lastPast ? 'off' : lastPast.status === 'given' ? 'ok' : 'closed';
+      text = `Próxima ${medWhen(next.due, nowTs)}`;
+    } else {
+      level = lastPast?.status === 'given' ? 'ok' : 'closed';
+      text = 'Tratamiento terminado';
+    }
+    out.push({
+      id: `med-${key}`,
+      key,
+      dog,
+      name: rows[0].name,
+      doses,
+      current,
+      next,
+      lastGiven,
+      given: doses.filter((d) => d.status === 'given').length,
+      total: doses.length,
+      level,
+      text,
+      finished: !current && !next,
+      // Se sigue mostrando hasta un día después de la última aplicación.
+      active: nowTs <= lastDue + 24 * 3600000,
+    });
+  }
+  return out;
+}
+
 // ───────────── el día ─────────────
 
 /**
@@ -294,7 +374,13 @@ export function computeDay(model, { day, now = Date.now(), visitas = false } = {
     .filter((p) => p.rows.length);
   const walks = walksState(model, rules, day, dm);
   const long = longState(model, rules, day, dm, walks);
-  const dogs = model.dogs.map((d) => dogState(model, rules, d, day, dm, nowTs));
+  // Los tratamientos van por reloj, no por día: solo cuentan para el momento actual.
+  const meds = ended ? [] : medsState(model, rules, nowTs).filter((m) => m.active);
+  const dogs = model.dogs.map((d) => {
+    const ds = dogState(model, rules, d, day, dm, nowTs);
+    const own = meds.filter((m) => m.dog.id === d.id);
+    return { ...ds, meds: own, level: worst([ds.level, ...own.filter((m) => m.current).map((m) => m.level)]) };
+  });
 
   const items = [];
   for (const p of pills) {
@@ -308,6 +394,9 @@ export function computeDay(model, { day, now = Date.now(), visitas = false } = {
     items.push({ id: `${d.id}-caca`, kind: 'dog', level: d.poopLevel, short: `${name} sin caca hace ${fmtSpan(d.poopMin)}` });
     items.push({ id: `${d.id}-pis`, kind: 'dog', level: d.peeLevel, short: `${name} sin pis hace ${fmtSpan(d.peeAgoMin ?? d.peeActive)}` });
   }
+  for (const m of meds) {
+    if (m.current) items.push({ id: m.id, kind: 'med', level: m.level, short: `${m.dog.name} · ${m.name}: ${m.text.charAt(0).toLowerCase()}${m.text.slice(1)}` });
+  }
   const visible = visitas ? items.filter((i) => !i.private) : items;
   return {
     day,
@@ -319,6 +408,7 @@ export function computeDay(model, { day, now = Date.now(), visitas = false } = {
     walks,
     long,
     dogs,
+    meds,
     items,
     visible,
     alerts: visible.filter((i) => i.level === 'alert'),

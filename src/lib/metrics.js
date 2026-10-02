@@ -164,6 +164,8 @@ export function buildModel(db) {
     routineItems,
     routineLogs,
     treats,
+    // Aplicaciones programadas de tratamientos de las perras (colirio, etc.).
+    meds: [...(db.dog_meds ?? [])].sort((a, b) => new Date(a.due_at) - new Date(b.due_at) || a.id - b.id),
     events: [...db.events].sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at)),
     logsByChore,
     firstDay,

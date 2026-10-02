@@ -4021,3 +4021,115 @@ select {
   width: 34px;
   height: 34px;
 }
+
+/* v0.1.3 · tratamientos de las perras */
+.dp-meds {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.dp-med {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--lv) var(--lv-mix), var(--surface));
+  border: 1px solid color-mix(in oklab, var(--lv) 45%, var(--border));
+  border-left: 4px solid var(--c-casa);
+}
+.dp-med[data-dog='mocka'] {
+  border-left-color: var(--c-mocka);
+}
+.dp-med[data-dog='honey'] {
+  border-left-color: var(--c-honey);
+}
+.dp-med.lv-warn,
+.dp-med.lv-alert {
+  animation: panel-blink 1.8s ease-in-out infinite;
+}
+.dp-med-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.dp-med-name {
+  font-weight: 800;
+  font-size: 15px;
+}
+.dp-med-name small {
+  margin-left: 8px;
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 700;
+}
+.dp-med-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--lv-text);
+  font-weight: 800;
+  font-size: 14px;
+}
+.dp-med.lv-off .dp-med-state,
+.dp-med.lv-due .dp-med-state,
+.dp-med.lv-closed .dp-med-state {
+  color: var(--text-2);
+}
+.dp-med-last {
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+.dp-med-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.dp-med-actions .btn.yes {
+  min-height: 46px;
+  padding: 8px 18px;
+  font-size: 15px;
+}
+.med-row.med-upcoming td {
+  color: var(--muted);
+}
+.med-row.med-given td:nth-child(2) {
+  color: var(--st-ok-text);
+  font-weight: 800;
+}
+.med-row.med-missed td:nth-child(2),
+.med-row.med-skipped td:nth-child(2) {
+  color: var(--st-warn-text);
+  font-weight: 700;
+}
+.med-row.med-current td {
+  font-weight: 800;
+}
+.cap-inline {
+  text-transform: capitalize;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dp-med.lv-warn,
+  .dp-med.lv-alert {
+    animation: none;
+  }
+}
+.trow.med {
+  grid-template-columns: auto 1fr;
+  font-size: 18px;
+}
+.trow.med .trow-text strong {
+  color: var(--text);
+}
+.trow.med.lv-warn .trow-text,
+.trow.med.lv-alert .trow-text {
+  color: var(--lv-text);
+  font-weight: 800;
+}

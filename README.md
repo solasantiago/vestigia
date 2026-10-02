@@ -7,7 +7,7 @@ Los rastros de cada día en casa: check-ins de hábitos, paseos, caca y comida d
 
 La prueba de concepto con datos de ejemplo vive aparte, en [tracker_demo](https://github.com/solasantiago/tracker_demo).
 
-## Versión actual: v0.1.1, el tablero del iPad
+## Versión actual: v0.1.3, el tablero del iPad
 
 Una sola cuenta, **Casa**, con la sesión abierta en el iPad (pensado para el iPad horizontal, 1080 × 810).
 
@@ -28,6 +28,7 @@ Si algo está en rojo, se queda en el estado del día con una franja roja arriba
 
 - **Mica y Santi:** las pastillas en un toque, con "Hoy no" para cerrar una toma que no se va a tomar. La rutina opcional para dormir aparece desde las 18 h, plegada en un botón.
 - **Mocka y Honey:** botones grandes para salida corta, paseo largo, +1 tarritos y +1 premio, y la lista de salidas del día (la última se puede deshacer durante 10 minutos). Salen siempre las dos: por cada una se marca pis y caca (lo que no se toca queda como "no") y, si hace falta, "algo raro".
+- **Tratamientos** (por ejemplo, un colirio): cuando toca una aplicación aparece con el botón "Aplicado ✓"; recordatorio 15 min antes, naranja a los 30 min de atraso y rojo a los 90. La planilla completa queda en la pestaña Perros.
 - **Agenda** de hoy y los próximos días.
 
 **Además:**

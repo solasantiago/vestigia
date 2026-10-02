@@ -28,6 +28,7 @@ export const TABLES = {
   routine_logs: ['id'],
   dog_treats: ['id'],
   day_acks: ['day'],
+  dog_meds: ['id'],
 };
 
 // Tablas que se escuchan en tiempo real.
@@ -48,6 +49,7 @@ export const LIVE_TABLES = [
   'routine_logs',
   'dog_treats',
   'day_acks',
+  'dog_meds',
 ];
 
 const PAGE = 1000;

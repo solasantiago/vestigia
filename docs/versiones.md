@@ -31,6 +31,14 @@ Las ideas sueltas, con su costo y lo que ya se definió, están en [Ideas pendie
 - Los textos siguen a la meta de la casa ("las 4 salidas y el paseo largo").
 - Al anotar un paseo largo, la escalera arranca destildada.
 
+## v0.1.3 — Tratamientos de las perras ✅ (2/10/2026)
+
+- **Tratamientos con horario** (el colirio de Mocka): cada aplicación programada aparece en el kiosco con un botón "Aplicado ✓" cuando toca, y se puede anotar adelantada o marcar "No se aplicó".
+- Semáforo: recordatorio 15 minutos antes, naranja a los 30 minutos de atraso, rojo a los 90. Si llega la siguiente aplicación, la anterior se da por pasada.
+- En el resumen se ve en el mosaico de la perra; en la pestaña Perros queda la planilla completa (programada, aplicada, quién).
+- Nueva categoría de eventos: Trabajo.
+- Por ahora los tratamientos se cargan desde la base (no hay pantalla para crearlos).
+
 ## v0.2 — Cada uno en su celular (propuesta)
 
 - Cuentas de Mica y de Santi, con la privacidad de la §7 del documento funcional.
