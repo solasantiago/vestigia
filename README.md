@@ -7,7 +7,7 @@ Los rastros de cada día en casa: check-ins de hábitos, paseos, caca y comida d
 
 La prueba de concepto con datos de ejemplo vive aparte, en [tracker_demo](https://github.com/solasantiago/tracker_demo).
 
-## Versión actual: v0.1.3, el tablero del iPad
+## Versión actual: v0.1.4, el tablero del iPad
 
 Una sola cuenta, **Casa**, con la sesión abierta en el iPad (pensado para el iPad horizontal, 1080 × 810).
 
@@ -59,7 +59,7 @@ Las salidas se miden de 8 a 2. Fuera de ese horario nada titila.
 | Mica (2 tomas) | Desde que empieza el día | A las 12 si no tomó ninguna | A las 15 |
 | Mica, la segunda toma | Desde las 21 | A las 23 | — |
 | Santi, mañana | Desde que empieza el día | A las 10 | A las 12 |
-| Santi, noche (hora de dormir: 00:00) | Desde las 00:00 | A la 1 | Nunca; desde las 2 deja de insistir |
+| Santi, noche (opcional desde el 3/10) | Desde las 00:00, sin insistir | Nunca | Nunca; no cuenta para el día completo ni las rachas |
 
 En el resumen compartido, las pastillas se ven con palabras amables y sin el nombre del remedio; el modo visitas las oculta.
 

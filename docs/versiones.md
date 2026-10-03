@@ -39,6 +39,11 @@ Las ideas sueltas, con su costo y lo que ya se definió, están en [Ideas pendie
 - Nueva categoría de eventos: Trabajo.
 - Por ahora los tratamientos se cargan desde la base (no hay pantalla para crearlos).
 
+## v0.1.4 — Pastillas opcionales ✅ (3/10/2026)
+
+- La pastilla de la noche de Santi pasa a ser **opcional**: se puede anotar, pero no insiste, no aparece en "Falta registrar" de la noche y no cuenta para el día completo ni las rachas.
+- Cualquier hábito se puede marcar como opcional desde la base (`habits.schedule.optional`).
+
 ## v0.2 — Cada uno en su celular (propuesta)
 
 - Cuentas de Mica y de Santi, con la privacidad de la §7 del documento funcional.

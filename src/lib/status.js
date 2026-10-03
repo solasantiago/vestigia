@@ -134,6 +134,12 @@ export function pillState(model, h, day, dm) {
   if (c?.closed || c?.status === 'no') {
     return { ...base, level: 'closed', text: amount ? `${amount} de ${doses} · el resto hoy no` : 'Hoy no' };
   }
+  // Opcional: se puede anotar, pero no insiste ni cuenta para el día completo ni las rachas.
+  if (h.schedule?.optional) {
+    const from = hhmmToDayMin(h.schedule.from);
+    const early = from != null && dm < from;
+    return { ...base, optional: true, level: early ? 'off' : 'quiet', text: early ? `Opcional · ${fromHour(from)}` : 'Opcional' };
+  }
   const s = (amount === 0 ? h.schedule : h.schedule?.next) ?? {};
   const t = { from: hhmmToDayMin(s.from), warn: hhmmToDayMin(s.warn), alert: hhmmToDayMin(s.alert), quiet: hhmmToDayMin(s.quiet) };
   let level = t.from != null && dm < t.from ? (amount > 0 ? 'ok' : 'off') : 'due';
@@ -453,7 +459,7 @@ export function weekInfo(model, now) {
   const rows = days.map((day) => {
     const st = computeDay(model, { day, now });
     const walksOk = st.walks.count >= st.walks.goal && st.long.count >= st.long.goal;
-    const pills = st.pills.map((p) => ({ person: p.person, ok: p.rows.every((r) => r.level === 'ok') }));
+    const pills = st.pills.map((p) => ({ person: p.person, ok: p.rows.filter((r) => !r.habit.schedule?.optional).every((r) => r.level === 'ok') }));
     return {
       day,
       today: day === today,
