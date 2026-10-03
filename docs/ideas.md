@@ -6,7 +6,7 @@ Ideas sueltas para Vestigia, con su costo, de qué dependen y qué quedó defini
 - **Delicado:** toca datos ya guardados, permisos, privacidad o las reglas del semáforo; se prueba con más cuidado.
 - **Estado:** 💡 idea · ✅ decidida · 🎫 en GitHub · 🚀 hecha.
 
-Última revisión: 28/9/2026.
+Última revisión: 3/10/2026.
 
 ## Resumen
 
@@ -20,7 +20,7 @@ Ideas sueltas para Vestigia, con su costo, de qué dependen y qué quedó defini
 | 5 | [Quién está en casa](#5--quién-está-en-casa) | Medio | Privacidad | Sincronizar dispositivos | 💡 |
 | 6 | [Estado de ánimo](#6--estado-de-ánimo) | Bajo a medio | Privacidad | — | 💡 |
 | 7 | [Ambientes: producción, testing y POC](#7--ambientes-producción-testing-y-poc) | Medio | Sí (base de producción) | — | 💡 |
-| 8 | [Tarritos con "¿cuándo?"](#8--tarritos-con-cuándo) | Bajo | No | — | ✅ |
+| 8 | ["¿Cuándo?" al anotar: tarritos, pastillas y tratamientos](#8--cuándo-al-anotar-tarritos-pastillas-y-tratamientos) | Bajo | No | — | ✅ |
 
 ## Orden sugerido
 
@@ -175,14 +175,27 @@ Tres versiones de la app, todas a partir del código de Vestigia (la prueba de c
 - [ ] Si se suman las pruebas automáticas.
 - [ ] Qué pasa con `tracker_demo`: archivar con aviso o borrar.
 
-## 8 · Tarritos con "¿cuándo?"
+## 8 · "¿Cuándo?" al anotar: tarritos, pastillas y tratamientos
 
-Hoy una carga de tarritos queda con la hora en que se toca el botón y solo se puede deshacer durante 10 minutos. Si se anota tarde, la hora queda mal y hay que corregirla a mano en la base (pasó el 29/9: una carga de las 18:20 quedó a las 0:16).
+Hoy todo lo que se anota con un toque queda con la hora en que se toca el botón, y solo se puede deshacer durante 10 minutos. Si se anota tarde, la hora queda mal y hay que corregirla a mano en la base. Ya pasó tres veces:
 
-- Sumar "¿cuándo?" al anotar: **Recién · Hace 1 h · Otra hora…**, como en las salidas.
-- Costo bajo: no toca la base (la hora ya se guarda), solo el botón y un diálogo chico.
-- Posible extensión: lo mismo para premios.
+- 29/9: una carga de tarritos de las 18:20 quedó a las 0:16.
+- 2/10: hubo que agregar a mano dos cargas de tarritos del domingo 27.
+- 3/10: la pastilla de la mañana de las 9:50 quedó anotada a las 12 y pico.
+
+**Qué se suma:** un "¿cuándo?" al anotar, con **Recién · Hace 1 h · Otra hora…**, como ya tienen las salidas. "Recién" queda elegido por defecto, así el caso normal sigue siendo un solo toque.
+
+- **Tarritos** (pedido el 30/9).
+- **Pastillas** de Mica y Santi (pedido el 3/10).
+- **Tratamientos de las perras**, como el colirio (pedido el 3/10).
+- Posible extensión: premios.
+
+Costo bajo: no toca la base (la hora ya se guarda en todos los casos), solo los botones y un diálogo chico. Cuidado: que no sume un toque al caso normal, sobre todo en las pastillas.
 
 **Definido:**
 
-- Se hace (pedido el 30/9).
+- Se hace para tarritos, pastillas y tratamientos.
+
+**Abierto:**
+
+- [ ] Si "Otra hora…" permite también anotar en un día anterior (hoy eso solo se puede desde la base).
