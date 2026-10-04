@@ -13,7 +13,7 @@ Cada versión publicada queda marcada con una rama `release/…` que no se toca 
 | `release/v0.1.2` | `f091b1c` | Un paseo largo por día | ✅ Sí (no muestra los tratamientos ni el ícono de Trabajo) |
 | `release/v0.1.3` | `6196700` | Tratamientos de las perras (colirio) y categoría Trabajo | ✅ Sí (la pastilla de la noche vuelve a contar para el día completo, sin insistir) |
 | `release/v0.1.4` | `4b27b83` | Pastilla de la noche opcional | ⚠️ Con la pastilla nueva, los días anteriores al 5/10 dejan de verse completos para Santi; al volver a esta versión conviene desactivar ese hábito |
-| `release/v0.1.5` | ver rama | Pastilla nueva de la mañana; hábitos nuevos no cuentan hacia atrás | ✅ Es la de hoy |
+| `release/v0.1.5` | `cb5c1f9` | Pastilla nueva de la mañana; hábitos nuevos no cuentan hacia atrás | ✅ Es la de hoy |
 
 Al publicar una versión nueva se crea su rama: `git push origin main:refs/heads/release/v0.2`.
 
