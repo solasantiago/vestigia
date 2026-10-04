@@ -125,8 +125,8 @@ export function pillState(model, h, day, dm) {
   const c = model.checkinsByHabit.get(h.id)?.get(day) ?? null;
   const amount = c ? c.amount ?? (c.status === 'si' ? doses : 0) : 0;
   const base = { id: `pill-${h.id}`, habit: h, checkin: c, doses, amount, label: pillLabel(h), noun: pillNoun(h, doses) };
-  if (h.from && day < h.from) return { ...base, level: 'off', text: 'Todavía no' };
-  if (!isScheduled(h, day)) return { ...base, level: 'off', text: 'Hoy no toca' };
+  if (h.from && day < h.from) return { ...base, level: 'off', skip: true, text: 'Todavía no empezó' };
+  if (!isScheduled(h, day)) return { ...base, level: 'off', skip: true, text: 'Hoy no toca' };
   if (c?.status === 'na') return { ...base, level: 'closed', text: 'Hoy no aplica' };
   if (amount >= doses) {
     return { ...base, level: 'ok', done: true, text: doses > 1 ? `Las ${doses} ✓ · ${fmtTime(c.answered_at)}` : `✓ ${fmtTime(c.answered_at)}` };
@@ -374,7 +374,9 @@ export function computeDay(model, { day, now = Date.now(), visitas = false } = {
 
   const pills = model.people
     .map((p) => {
-      const rows = model.habits.filter((h) => h.person_id === p.id && h.source === 'manual').map((h) => pillState(model, h, day, dm));
+      const rows = model.habits.filter((h) => h.person_id === p.id && h.source === 'manual').map((h) => pillState(model, h, day, dm))
+        // Lo que todavía no empezó o no toca ese día no se muestra ni cuenta.
+        .filter((r) => !r.skip);
       return { id: `pills-${p.id}`, person: p, rows, level: worst(rows.map((r) => r.level)) };
     })
     .filter((p) => p.rows.length);
@@ -459,7 +461,7 @@ export function weekInfo(model, now) {
   const rows = days.map((day) => {
     const st = computeDay(model, { day, now });
     const walksOk = st.walks.count >= st.walks.goal && st.long.count >= st.long.goal;
-    const pills = st.pills.map((p) => ({ person: p.person, ok: p.rows.filter((r) => !r.habit.schedule?.optional).every((r) => r.level === 'ok') }));
+    const pills = st.pills.map((p) => ({ person: p.person, ok: p.rows.filter((r) => !r.optional && !r.skip).every((r) => r.level === 'ok') }));
     return {
       day,
       today: day === today,

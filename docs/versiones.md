@@ -44,6 +44,11 @@ Las ideas sueltas, con su costo y lo que ya se definió, están en [Ideas pendie
 - La pastilla de la noche de Santi pasa a ser **opcional**: se puede anotar, pero no insiste, no aparece en "Falta registrar" de la noche y no cuenta para el día completo ni las rachas.
 - Cualquier hábito se puede marcar como opcional desde la base (`habits.schedule.optional`).
 
+## v0.1.5 — Una pastilla más a la mañana ✅ (4/10/2026)
+
+- Santi suma una pastilla diaria a la mañana desde el 5/10, con los mismos horarios que la otra (naranja a las 10, rojo a las 12).
+- Un hábito nuevo no se muestra ni cuenta para los días anteriores a su inicio.
+
 ## v0.2 — Cada uno en su celular (propuesta)
 
 - Cuentas de Mica y de Santi, con la privacidad de la §7 del documento funcional.
