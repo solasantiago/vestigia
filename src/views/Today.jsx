@@ -112,6 +112,13 @@ function PillRow({ r }) {
         Deshacer
       </button>
     );
+  } else if (r.optional) {
+    // Opcional: un solo botón chico, sin "Hoy no".
+    actionsEl = (
+      <button type="button" className="btn yes xs" onClick={() => set('si', doses)}>
+        La tomé ✓
+      </button>
+    );
   } else if (amount > 0) {
     actionsEl = (
       <>
@@ -155,11 +162,12 @@ function PillRow({ r }) {
 
   const suggestOne = doses > 1 && amount === 0 && !r.done && ['due', 'warn', 'alert'].includes(r.level);
   return (
-    <li className={`prow lv-${r.level} ${r.done || r.level === 'closed' ? 'done' : ''}`}>
+    <li className={`prow lv-${r.level} ${r.done || r.level === 'closed' || r.optional ? 'done' : ''}`}>
       <div className="prow-text">
         <span className="prow-label">
           <span aria-hidden="true">{h.emoji}</span> {r.label}
         </span>
+        {r.range || r.detail ? <span className="prow-range">{[r.detail, r.range].filter(Boolean).join(' · ')}</span> : null}
         <span className="prow-state">
           <Dot level={r.level} /> {r.text}
         </span>

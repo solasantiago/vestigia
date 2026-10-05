@@ -49,6 +49,12 @@ Las ideas sueltas, con su costo y lo que ya se definió, están en [Ideas pendie
 - Santi suma una pastilla diaria a la mañana desde el 5/10, con los mismos horarios que la otra (naranja a las 10, rojo a las 12).
 - Un hábito nuevo no se muestra ni cuenta para los días anteriores a su inicio.
 
+## v0.1.6 — Cada pastilla con su nombre y horario ✅ (5/10/2026)
+
+- Las pastillas se muestran con el nombre cargado en la base y el horario sugerido ("antes de las 10", "desde las 00:00"); los horarios del semáforo no cambian.
+- Las opcionales tienen un solo botón chico ("La tomé ✓").
+- Los nombres de los medicamentos se cargan solo en la base, no en el repositorio.
+
 ## v0.2 — Cada uno en su celular (propuesta)
 
 - Cuentas de Mica y de Santi, con la privacidad de la §7 del documento funcional.

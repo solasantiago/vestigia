@@ -117,14 +117,29 @@ export function pillLabel(h) {
 function pillNoun(h, doses) {
   const m = /^pastilla de la (.+)$/i.exec(h.name ?? '');
   if (m) return `la pastilla de la ${m[1].toLowerCase()}`;
+  // Con nombre propio (el del medicamento), se usa tal cual.
+  if (h.name && !/^pastillas?$/i.test(h.name)) return h.name;
   return doses > 1 ? 'las pastillas' : 'la pastilla';
+}
+
+/** Horario sugerido, según el horario del hábito: "antes de las 10", "desde las 00:00", "antes de las 12 · la segunda desde las 21". */
+export function pillRange(h) {
+  const s = h.schedule ?? {};
+  const from = hhmmToDayMin(s.from);
+  const warn = hhmmToDayMin(s.warn);
+  const parts = [];
+  if (warn != null && !s.optional) parts.push(beforeHour(warn));
+  else if (from != null) parts.push(fromHour(from));
+  const nextFrom = hhmmToDayMin(s.next?.from);
+  if (nextFrom != null) parts.push(`la segunda ${fromHour(nextFrom)}`);
+  return parts.join(' · ');
 }
 
 export function pillState(model, h, day, dm) {
   const doses = h.doses ?? 1;
   const c = model.checkinsByHabit.get(h.id)?.get(day) ?? null;
   const amount = c ? c.amount ?? (c.status === 'si' ? doses : 0) : 0;
-  const base = { id: `pill-${h.id}`, habit: h, checkin: c, doses, amount, label: pillLabel(h), noun: pillNoun(h, doses) };
+  const base = { id: `pill-${h.id}`, habit: h, checkin: c, doses, amount, label: pillLabel(h), noun: pillNoun(h, doses), range: pillRange(h), detail: h.schedule?.detail ?? null };
   if (h.from && day < h.from) return { ...base, level: 'off', skip: true, text: 'Todavía no empezó' };
   if (!isScheduled(h, day)) return { ...base, level: 'off', skip: true, text: 'Hoy no toca' };
   if (c?.status === 'na') return { ...base, level: 'closed', text: 'Hoy no aplica' };
@@ -138,7 +153,7 @@ export function pillState(model, h, day, dm) {
   if (h.schedule?.optional) {
     const from = hhmmToDayMin(h.schedule.from);
     const early = from != null && dm < from;
-    return { ...base, optional: true, level: early ? 'off' : 'quiet', text: early ? `Opcional · ${fromHour(from)}` : 'Opcional' };
+    return { ...base, optional: true, level: early ? 'off' : 'quiet', text: 'Opcional' };
   }
   const s = (amount === 0 ? h.schedule : h.schedule?.next) ?? {};
   const t = { from: hhmmToDayMin(s.from), warn: hhmmToDayMin(s.warn), alert: hhmmToDayMin(s.alert), quiet: hhmmToDayMin(s.quiet) };
@@ -162,7 +177,7 @@ export function pillState(model, h, day, dm) {
 function pillShort(person, r) {
   const who = person.short_name;
   if (r.partial) return `${who}: ${r.level === 'due' ? 'toca' : 'falta'} ${r.doses - r.amount === 1 ? 'la segunda pastilla' : 'terminar las pastillas'}`;
-  const verb = r.level === 'due' ? 'toca' : r.doses > 1 && !/de la/.test(r.noun) ? 'faltan' : 'falta';
+  const verb = r.level === 'due' ? 'toca' : /^las /.test(r.noun) ? 'faltan' : 'falta';
   return `${who}: ${verb} ${r.noun}`;
 }
 

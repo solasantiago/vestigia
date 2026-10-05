@@ -193,6 +193,7 @@ function PillTile({ p, calm }) {
       {single ? (
         <>
           <div className="tile-big">{pillBig(p.rows[0])}</div>
+          {p.rows[0].range ? <div className="tile-line">{p.rows[0].range}</div> : null}
           <div className="tile-line strong">{p.rows[0].text}</div>
         </>
       ) : (
@@ -200,7 +201,10 @@ function PillTile({ p, calm }) {
           {p.rows.map((r) => (
             <li key={r.id} className={`trow lv-${r.level}`}>
               <Dot level={r.level} />
-              <span className="trow-label">{r.label}</span>
+              <span className="trow-label">
+                {r.label}
+                {r.range ? <small>{r.range}</small> : null}
+              </span>
               <span className="trow-text">{r.text}</span>
             </li>
           ))}

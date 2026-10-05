@@ -4133,3 +4133,38 @@ select {
   color: var(--lv-text);
   font-weight: 800;
 }
+
+/* v0.1.6 · nombre del medicamento y horario sugerido */
+.prow-range {
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.trow-label small {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.kcol-pills .prow {
+  gap: 6px;
+  padding: 8px 12px;
+}
+.kcol-pills .prows {
+  gap: 6px;
+}
+.kcol-pills .prow-actions .btn:not(.xs) {
+  min-height: 42px;
+}
+.kcol-pills {
+  gap: 8px;
+}
+.kcol-pills .kblock {
+  gap: 6px;
+  padding: 10px 12px;
+}
+.kcol-pills .routine-closed {
+  min-height: 40px;
+  padding: 6px 10px;
+}
