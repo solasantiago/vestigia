@@ -189,7 +189,7 @@ function PillTile({ p, calm }) {
         </span>
         <StatusChip level={p.level} />
       </header>
-      <div className="tile-kicker">💊 Pastillas</div>
+      <div className="tile-kicker">💊 {single ? p.rows[0].label : 'Pastillas'}</div>
       {single ? (
         <>
           <div className="tile-big">{pillBig(p.rows[0])}</div>
