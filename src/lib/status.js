@@ -367,8 +367,10 @@ export function medsState(model, rules, nowTs) {
       level,
       text,
       finished: !current && !next,
-      // Se sigue mostrando hasta un día después de la última aplicación.
-      active: nowTs <= lastDue + 24 * 3600000,
+      // Se muestra mientras quede algo por aplicar; terminado, sale del kiosco y del resumen
+      // (la planilla sigue en la pestaña Perros).
+      active: Boolean(current || next),
+      lastDue,
     });
   }
   return out;

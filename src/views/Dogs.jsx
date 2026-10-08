@@ -49,7 +49,11 @@ export default function Dogs() {
   const days90 = range(start90, today);
   const upcoming = model.events.filter((e) => e.category === 'perros' && calDayOf(e.starts_at) >= calToday).slice(0, 4);
 
-  const meds = useMemo(() => medsState(model, rulesOf(model), new Date(now).getTime()), [model, now]);
+  // Planilla de cada tratamiento: en curso, o terminado hace menos de 2 semanas.
+  const meds = useMemo(() => {
+    const nowTs = new Date(now).getTime();
+    return medsState(model, rulesOf(model), nowTs).filter((m) => m.active || nowTs - m.lastDue < 14 * 86400000);
+  }, [model, now]);
   const MED_STATUS = { given: '✓ Aplicado', skipped: 'No se aplicó', missed: 'Se pasó', current: 'Toca ahora', upcoming: 'Pendiente' };
 
   return (
