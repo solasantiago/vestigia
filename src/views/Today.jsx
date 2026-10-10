@@ -4,7 +4,7 @@ import { useData, useRun } from '../lib/data.jsx';
 import { useKiosk } from '../lib/kiosk.jsx';
 import { addDays, calDayOf, calTodayISO, dayMinutesOf } from '../lib/dates.js';
 import { visibleEvents } from '../lib/metrics.js';
-import { computeDay } from '../lib/status.js';
+import { computeDay, cycleState, CYCLE_PHASE, rulesOf } from '../lib/status.js';
 import { Avatar } from '../components/ui.jsx';
 import { FootIcon, NoTraces } from '../components/prints.jsx';
 import { Dot, lv, StatusChip } from '../components/Semaforo.jsx';
@@ -37,6 +37,7 @@ function KioskToday() {
         <DogsPanel st={st} who={kiosk.who} calm={calm} />
       </section>
       <section className="kcol kcol-agenda" aria-label="Agenda">
+        <CycleCard />
         <AgendaPanel />
       </section>
     </div>
@@ -175,6 +176,50 @@ function PillRow({ r }) {
       </div>
       <div className="prow-actions">{actionsEl}</div>
     </li>
+  );
+}
+
+/** Ciclo: fase y día, y "¿Te vino?" solo cuando corresponde. Sin semáforo. Va arriba de la agenda. */
+function CycleCard() {
+  const { model, actions } = useData();
+  const { now } = useApp();
+  const run = useRun();
+  const cal = calTodayISO(new Date(now));
+  const personId = rulesOf(model).cycle?.person_id;
+  const person = personId ? model.peopleById.get(personId) : null;
+  const c = person ? cycleState(model, rulesOf(model), cal, personId) : null;
+  if (!c) return null;
+  const recent = c.lastRow && Date.now() - new Date(c.lastRow.created_at ?? 0).getTime() < 10 * 60 * 1000;
+  const mark = (d) => run(() => actions.markCycle(personId, d), 'Anotado');
+  return (
+    <div className="kblock cycle-card">
+      <header className="kblock-head">
+        <span className="kblock-title">
+          <Avatar person={person} size="sm" /> 🌸 Ciclo
+        </span>
+      </header>
+      <div className="cycle">
+      <span className="cycle-text">
+        {c.phase ? <strong>{`${CYCLE_PHASE[c.phase]} · día ${c.day}`}</strong> : null}
+        <span className="cycle-sub">{c.text}</span>
+      </span>
+      {c.canMark ? (
+        <span className="cycle-actions">
+          <span className="cycle-q">¿Te vino?</span>
+          <button type="button" className="btn yes xs" onClick={() => mark(cal)}>
+            Hoy
+          </button>
+          <button type="button" className="btn ghost xs" onClick={() => mark(addDays(cal, -1))}>
+            Ayer
+          </button>
+        </span>
+      ) : recent ? (
+        <button type="button" className="link-btn" onClick={() => run(() => actions.undoCycle(c.lastRow.id), 'Borrado')}>
+          deshacer
+        </button>
+      ) : null}
+      </div>
+    </div>
   );
 }
 

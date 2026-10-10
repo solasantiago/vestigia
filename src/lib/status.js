@@ -298,6 +298,52 @@ export function dogState(model, rules, dog, day, dm, nowTs) {
   };
 }
 
+// ───────────── ciclo ─────────────
+
+export const CYCLE_PHASE = { menstrual: 'Menstruación', folicular: 'Fase folicular', ovulacion: 'Ovulación', lutea: 'Fase lútea' };
+const isoDiff = (a, b) => Math.round((Date.parse(`${a}T12:00:00Z`) - Date.parse(`${b}T12:00:00Z`)) / 86400000);
+const dm2 = (d) => `${Number(d.slice(8, 10))}/${Number(d.slice(5, 7))}`;
+
+/**
+ * Ciclo de una persona (configurado en rules.cycle), en días calendario.
+ * Día 1 = el día que empezó el período. Menstruación los primeros días, ovulación ~14 días después,
+ * y el botón para marcar el próximo período reaparece `hide_days` días después del último.
+ * Solo informa: no tiene semáforo ni cuenta para nada.
+ */
+export function cycleState(model, rules, calDay, personId) {
+  const c = rules.cycle;
+  if (!c?.person_id || c.person_id !== personId) return null;
+  const rows = (model.cycles ?? []).filter((x) => x.person_id === personId && x.started_on <= calDay);
+  const starts = rows.map((x) => x.started_on);
+  const diffs = starts
+    .slice(1)
+    .map((d, i) => isoDiff(d, starts[i]))
+    .filter((n) => n >= 15 && n <= 60)
+    .slice(-6);
+  const length = diffs.length ? Math.round(diffs.reduce((a, b) => a + b, 0) / diffs.length) : c.length ?? 28;
+  const lastRow = rows[rows.length - 1] ?? null;
+  const last = lastRow?.started_on ?? null;
+  const span = (from, to) => (from && to ? `entre el ${dm2(from)} y el ${dm2(to)}` : null);
+
+  if (!last) {
+    const w = span(c.expected_from, c.expected_to);
+    let text = 'Marcá el día que empiece el período';
+    if (w) text = calDay < c.expected_from ? `Se espera ${w}` : calDay <= c.expected_to ? `Puede venir ${w}` : `Se esperaba ${w}`;
+    return { personId, phase: null, day: null, text, canMark: true, last: null, lastRow: null, length };
+  }
+  const day = isoDiff(calDay, last) + 1;
+  const ovDay = 1 + (c.ovulation_after ?? 14);
+  const pd = c.period_days ?? 5;
+  const phase = day <= pd ? 'menstrual' : day < ovDay - 1 ? 'folicular' : day <= ovDay + 1 ? 'ovulacion' : 'lutea';
+  const from = addDays(last, length - 2);
+  const to = addDays(last, length + 1);
+  let text;
+  if (phase === 'folicular') text = `Ovulación estimada: ${dm2(addDays(last, ovDay - 1))}`;
+  else if (calDay > to) text = `Se esperaba ${span(from, to)}`;
+  else text = `Próximo período ${span(from, to)}`;
+  return { personId, phase, day, text, canMark: isoDiff(calDay, last) >= (c.hide_days ?? 26), last, lastRow, length };
+}
+
 // ───────────── tratamientos ─────────────
 
 /** "a las 17:00" si falta poco; "sáb 08:00" si es más adelante. */

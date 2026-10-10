@@ -62,6 +62,12 @@ Las ideas sueltas, con su costo y lo que ya se definió, están en [Ideas pendie
 - Barra compacta con la franja de urgente fija; formularios como hoja desde abajo.
 - El iPad no cambia: se comprobó comparando capturas antes y después, píxel por píxel.
 
+## v0.1.8 — Ciclo ✅ (10/10/2026)
+
+- Arriba de la agenda: la fase (menstruación, folicular, ovulación, lútea) y el día del ciclo, con la ovulación estimada o la ventana del próximo período.
+- "¿Te vino? Hoy / Ayer" aparece solo antes de la primera marca y desde 26 días después de la última. Se puede deshacer durante 10 minutos.
+- Sin semáforo ni avisos; se oculta en modo visitas. La configuración y las fechas viven solo en la base.
+
 ## v0.2 — Cada uno en su celular (propuesta)
 
 - Cuentas de Mica y de Santi, con la privacidad de la §7 del documento funcional.

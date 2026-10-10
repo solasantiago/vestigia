@@ -17,7 +17,7 @@ import {
   tsToDayMin,
 } from '../lib/dates.js';
 import { visibleEvents } from '../lib/metrics.js';
-import { computeDay, goalsText, nightInfo, rulesOf, weekInfo, worst } from '../lib/status.js';
+import { computeDay, cycleState, CYCLE_PHASE, goalsText, nightInfo, rulesOf, weekInfo, worst } from '../lib/status.js';
 import { CATEGORY } from '../views/common.jsx';
 import { Avatar } from './ui.jsx';
 import { FootIcon, FootShape, HouseTrail, Mark, PawIcon, PawShape } from './prints.jsx';
@@ -180,7 +180,9 @@ function pillBig(r) {
 }
 
 function PillTile({ p, calm }) {
+  const { model } = useData();
   const single = p.rows.length === 1;
+  const cyc = cycleState(model, rulesOf(model), calTodayISO(Date.now()), p.person.id);
   return (
     <section className={`tile ${lv(p.level, { calm })}`}>
       <header className="tile-head">
@@ -194,6 +196,11 @@ function PillTile({ p, calm }) {
         <>
           <div className="tile-big">{pillBig(p.rows[0])}</div>
           {p.rows[0].range ? <div className="tile-line">{p.rows[0].range}</div> : null}
+          {cyc ? (
+            <div className="tile-line cycle-line">
+              🌸 {cyc.phase ? `${CYCLE_PHASE[cyc.phase]} · día ${cyc.day}` : cyc.text}
+            </div>
+          ) : null}
           <div className="tile-line strong">{p.rows[0].text}</div>
         </>
       ) : (

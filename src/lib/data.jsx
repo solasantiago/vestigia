@@ -192,6 +192,14 @@ export function DataProvider({ children }) {
         unwrap(await supabase.from('dog_treats').insert({ kind, given_by: byId, dog_ids: dogIds, given_at: new Date().toISOString() }));
         await reload('dog_treats');
       },
+      async markCycle(personId, day) {
+        unwrap(await supabase.from('cycle_starts').insert({ person_id: personId, started_on: day }));
+        await reload('cycle_starts');
+      },
+      async undoCycle(id) {
+        unwrap(await supabase.from('cycle_starts').delete().eq('id', id));
+        await reload('cycle_starts');
+      },
       async giveMed(id, byId) {
         unwrap(await supabase.from('dog_meds').update({ given_at: new Date().toISOString(), given_by: byId, skipped: false }).eq('id', id));
         await reload('dog_meds');
