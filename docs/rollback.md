@@ -16,7 +16,7 @@ Cada versión publicada queda marcada con una rama `release/…` que no se toca 
 | `release/v0.1.5` | `cb5c1f9` | Pastilla nueva de la mañana; hábitos nuevos no cuentan hacia atrás | ✅ Sí (muestra el nombre, sin el horario sugerido) |
 | `release/v0.1.6` | `ca4d9ad` | Pastillas con nombre y horario sugerido | ✅ Sí |
 | `release/v0.1.7` | `8d1f3f0` | Modo iPhone (el iPad igual que la v0.1.6) | ✅ Sí (no muestra el ciclo) |
-| `release/v0.1.8` | ver rama | Ciclo arriba de la agenda | ✅ Es la de hoy |
+| `release/v0.1.8` | `54cf01f` | Ciclo arriba de la agenda | ✅ Es la de hoy |
 
 Al publicar una versión nueva se crea su rama: `git push origin main:refs/heads/release/v0.2`.
 
