@@ -4168,3 +4168,81 @@ select {
   min-height: 40px;
   padding: 6px 10px;
 }
+
+/* v0.1.7 · iPhone (solo con .app.phone o pantallas angostas: el iPad no cambia) */
+.app.phone .kbar {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+.app.phone .kbar-tabs {
+  order: 3;
+  width: 100%;
+}
+.app.phone .kbar > .redstrip {
+  order: 4;
+  flex-basis: calc(100% + 28px);
+  margin: 4px -14px -6px;
+  font-size: 15px;
+}
+.app.phone .redstrip-text {
+  white-space: normal;
+}
+.app.phone .kbar .who-chip {
+  min-height: 38px;
+}
+.app.phone .main {
+  padding-top: 10px;
+}
+.app.phone .kcol-pills,
+.app.phone .kcol {
+  overflow: visible;
+}
+.app.phone .prow-actions .btn:not(.xs) {
+  min-height: 46px;
+}
+@media (max-width: 640px) {
+  .dialog {
+    width: 100%;
+    max-width: none;
+    max-height: 92dvh;
+    margin: auto 0 0;
+    border-radius: 22px 22px 0 0;
+  }
+  .dialog-inner {
+    max-height: 92dvh;
+  }
+  .dialog-foot {
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
+  }
+  .dialog-foot .btn {
+    flex: 1;
+    min-height: 48px;
+  }
+  .wd-grid .segmented,
+  .dialog .segmented {
+    width: 100%;
+  }
+  .wd-grid .segmented button,
+  .dialog .wd-grid .segmented.sm button {
+    flex: 1 1 auto;
+    justify-content: center;
+    min-height: 44px;
+  }
+  .who-card {
+    padding: 22px 16px 16px;
+  }
+  .who-card h2 {
+    font-size: 26px;
+  }
+}
+.app.phone .kbar > .redstrip {
+  min-height: 0;
+  padding: 6px 14px;
+  font-size: 14px;
+}
+.app.phone .kbar > .redstrip .redstrip-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

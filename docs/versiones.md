@@ -55,6 +55,13 @@ Las ideas sueltas, con su costo y lo que ya se definió, están en [Ideas pendie
 - Las opcionales tienen un solo botón chico ("La tomé ✓").
 - Los nombres de los medicamentos se cargan solo en la base, no en el repositorio.
 
+## v0.1.7 — También en el iPhone ✅ (10/10/2026)
+
+- En un teléfono la app abre directo en Hoy: sin resumen rotativo, sin modo noche y sin volver sola al resumen.
+- "¿Quién sos?" se elige una vez y el celular lo recuerda; sus pastillas aparecen primero.
+- Barra compacta con la franja de urgente fija; formularios como hoja desde abajo.
+- El iPad no cambia: se comprobó comparando capturas antes y después, píxel por píxel.
+
 ## v0.2 — Cada uno en su celular (propuesta)
 
 - Cuentas de Mica y de Santi, con la privacidad de la §7 del documento funcional.

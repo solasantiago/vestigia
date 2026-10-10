@@ -549,9 +549,9 @@ export function WhoOverlay() {
   const { model } = useData();
   const kiosk = useKiosk();
   return (
-    <div className="who-overlay" role="dialog" aria-modal="true" aria-label="¿Quién está usando el iPad?">
+    <div className="who-overlay" role="dialog" aria-modal="true" aria-label={kiosk.phone ? '¿Quién sos?' : '¿Quién está usando el iPad?'}>
       <div className="who-card">
-        <h2>¿Quién está usando el iPad?</h2>
+        <h2>{kiosk.phone ? '¿Quién sos?' : '¿Quién está usando el iPad?'}</h2>
         <div className="who-options">
           {model.people.map((p) => (
             <button key={p.id} type="button" className="who-btn" data-person={p.id} onClick={() => kiosk.choose(p.id)}>
@@ -566,9 +566,11 @@ export function WhoOverlay() {
             <span>Solo miro</span>
           </button>
         </div>
+        {kiosk.phone ? null : (
         <button type="button" className={`visitas-toggle ${kiosk.visitas ? 'on' : ''}`} aria-pressed={kiosk.visitas} onClick={kiosk.toggleVisitas}>
           <span aria-hidden="true">👥</span> {kiosk.visitas ? 'Hay visitas: las pastillas no se muestran en el resumen' : 'Hay visitas (ocultar las pastillas del resumen)'}
         </button>
+        )}
         <button type="button" className="link-btn who-back" onClick={kiosk.base === 'summary' ? kiosk.toSummary : kiosk.cancelAsk}>
           {kiosk.base === 'summary' ? 'Volver al resumen' : 'Cancelar'}
         </button>

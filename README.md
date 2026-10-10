@@ -7,7 +7,7 @@ Los rastros de cada día en casa: check-ins de hábitos, paseos, caca y comida d
 
 La prueba de concepto con datos de ejemplo vive aparte, en [tracker_demo](https://github.com/solasantiago/tracker_demo).
 
-## Versión actual: v0.1.6, el tablero del iPad
+## Versión actual: v0.1.7, el tablero del iPad (y el iPhone)
 
 Una sola cuenta, **Casa**, con la sesión abierta en el iPad (pensado para el iPad horizontal, 1080 × 810).
 
@@ -65,6 +65,15 @@ Las salidas se miden de 8 a 2. Fuera de ese horario nada titila.
 Cada pastilla se muestra con el nombre que tenga cargado en la base y su horario sugerido ("antes de las 10"); el modo visitas las oculta del resumen. Los nombres de los medicamentos viven solo en la base: este repositorio es público y no los incluye.
 
 Cada pastilla tiene su propio horario: desde cuándo se pregunta, cuándo pasa a atención y cuándo a urgente. Todo se ajusta desde la base, sin tocar el código: `household_settings.rules` (perras, tiempos del iPad y modo noche) y `habits.schedule` (cada hábito).
+
+### En el iPhone
+
+La misma web, con la cuenta Casa, agregada a la pantalla de inicio (Safari → Compartir → Agregar a inicio). Se detecta por el tamaño de la pantalla, así que el iPad no cambia.
+
+- Abre directo en **Hoy**, sin resumen rotativo ni modo noche.
+- La primera vez pregunta **"¿Quién sos?"** y el celular lo recuerda; se cambia tocando el nombre arriba. No vuelve solo a ningún lado.
+- Las pastillas de quien usa el celular aparecen primero; la franja de urgente queda fija arriba con la barra.
+- Los formularios se abren como hoja desde abajo.
 
 ## Seguridad
 

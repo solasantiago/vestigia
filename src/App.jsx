@@ -163,7 +163,7 @@ function Shell() {
     return (
       <>
         <Summary />
-        {kiosk.asking ? <WhoOverlay /> : null}
+        {kiosk.asking && status === 'ready' ? <WhoOverlay /> : null}
       </>
     );
   }
@@ -173,9 +173,9 @@ function Shell() {
 
   return (
     <AppCtx.Provider value={ctx}>
-      <div className={`app ${isKiosk ? 'kiosk' : ''} ${isKiosk && tab.id === 'hoy' ? 'kiosk-home' : ''}`} data-person={person}>
+      <div className={`app ${isKiosk ? 'kiosk' : ''} ${isKiosk && tab.id === 'hoy' && !kiosk.phone ? 'kiosk-home' : ''} ${kiosk.phone ? 'phone' : ''}`} data-person={person}>
         {isKiosk ? (
-          <KioskBar tabs={tabs} tab={tab} go={go} now={now} theme={theme} setTheme={setTheme} onMenu={() => setMenu(true)} live={live} />
+          <KioskBar tabs={tabs} tab={tab} go={go} now={now} theme={theme} setTheme={setTheme} onMenu={() => setMenu(true)} live={live} reds={reds} />
         ) : (
           <>
             <div className="top-trail" aria-hidden="true">
@@ -217,7 +217,7 @@ function Shell() {
           </>
         )}
 
-        {isKiosk ? <RedStrip items={reds} /> : null}
+        {isKiosk && !kiosk.phone ? <RedStrip items={reds} /> : null}
         {isKiosk && isLateNight(new Date(now)) ? <p className="late-note">{lateNightNote(today)}</p> : null}
 
         <main className="main">
@@ -264,13 +264,13 @@ function Shell() {
         ) : null}
 
         {menu ? (
-          <Dialog open onClose={() => setMenu(false)} title="Opciones del iPad">
+          <Dialog open onClose={() => setMenu(false)} title={kiosk.phone ? 'Opciones' : 'Opciones del iPad'}>
             <div className="menu-list">
               <div className="menu-theme">
                 <span className="form-label">Tema</span>
                 <ThemeSwitch value={theme} onChange={setTheme} />
               </div>
-              {awake.supported ? (
+              {kiosk.phone ? null : awake.supported ? (
                 <label className="check">
                   <input type="checkbox" checked={awake.on} onChange={(e) => awake.setOn(e.target.checked)} />
                   <span>Mantener la pantalla siempre encendida</span>
@@ -294,12 +294,12 @@ function Shell() {
           </Dialog>
         ) : null}
       </div>
-      {kiosk.asking ? <WhoOverlay /> : null}
+      {kiosk.asking && status === 'ready' ? <WhoOverlay /> : null}
     </AppCtx.Provider>
   );
 }
 
-function KioskBar({ tabs, tab, go, now, theme, setTheme, onMenu, live }) {
+function KioskBar({ tabs, tab, go, now, theme, setTheme, onMenu, live, reds }) {
   const { model } = useData();
   const kiosk = useKiosk();
   const who = kiosk.who ? model?.peopleById.get(kiosk.who) : null;
@@ -335,6 +335,7 @@ function KioskBar({ tabs, tab, go, now, theme, setTheme, onMenu, live }) {
             ▾
           </span>
         </button>
+        {kiosk.phone ? null : (
         <button
           type="button"
           className={`btn xs visitas ${kiosk.visitas ? 'on' : ''}`}
@@ -344,14 +345,18 @@ function KioskBar({ tabs, tab, go, now, theme, setTheme, onMenu, live }) {
         >
           👥 Visitas
         </button>
-        <ThemeSwitch value={theme} onChange={setTheme} compact />
+        )}
+        {kiosk.phone ? null : <ThemeSwitch value={theme} onChange={setTheme} compact />}
         <button type="button" className="btn ghost icon" aria-label="Opciones" onClick={onMenu}>
           ⋯
         </button>
-        <button type="button" className="btn xs primary" onClick={kiosk.toSummary}>
-          Resumen
-        </button>
+        {kiosk.phone ? null : (
+          <button type="button" className="btn xs primary" onClick={kiosk.toSummary}>
+            Resumen
+          </button>
+        )}
       </div>
+      {kiosk.phone ? <RedStrip items={reds} /> : null}
     </header>
   );
 }

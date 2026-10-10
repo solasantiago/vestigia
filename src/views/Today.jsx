@@ -28,7 +28,7 @@ function KioskToday() {
   return (
     <div className="kiosk-today">
       <section className="kcol kcol-pills" aria-label="Pastillas">
-        {st.pills.map((p) => (
+        {(kiosk.phone && kiosk.who ? [...st.pills].sort((a, b) => (b.person.id === kiosk.who) - (a.person.id === kiosk.who)) : st.pills).map((p) => (
           <PillsBlock key={p.id} block={p} calm={calm} />
         ))}
         {!st.pills.length ? <NoTraces>Todavía no hay pastillas ni hábitos cargados.</NoTraces> : null}
