@@ -15,7 +15,7 @@ Cada versión publicada queda marcada con una rama `release/…` que no se toca 
 | `release/v0.1.4` | `4b27b83` | Pastilla de la noche opcional | ⚠️ Con la pastilla nueva, los días anteriores al 5/10 dejan de verse completos para Santi; al volver a esta versión conviene desactivar ese hábito |
 | `release/v0.1.5` | `cb5c1f9` | Pastilla nueva de la mañana; hábitos nuevos no cuentan hacia atrás | ✅ Sí (muestra el nombre, sin el horario sugerido) |
 | `release/v0.1.6` | `ca4d9ad` | Pastillas con nombre y horario sugerido | ✅ Sí |
-| `release/v0.1.7` | ver rama | Modo iPhone (el iPad igual que la v0.1.6) | ✅ Es la de hoy |
+| `release/v0.1.7` | `8d1f3f0` | Modo iPhone (el iPad igual que la v0.1.6) | ✅ Es la de hoy |
 
 Al publicar una versión nueva se crea su rama: `git push origin main:refs/heads/release/v0.2`.
 
