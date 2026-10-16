@@ -4289,3 +4289,33 @@ select {
 .cycle-card .cycle-text {
   font-size: 15px;
 }
+/* Tratamientos compactos: el botón al costado, "no se aplicó" como enlace debajo. */
+.dp-med {
+  flex-wrap: nowrap;
+  padding: 6px 10px;
+}
+.dp-med-text {
+  flex: 1;
+}
+.dp-med-actions {
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.dp-med-actions .btn.yes {
+  min-height: 44px;
+  padding: 6px 16px;
+}
+.dp-med-skip {
+  margin-left: 0;
+  font-size: 12px;
+}
+.dogs-panel:has(.dp-meds) .btn.big {
+  min-height: 48px;
+}
+.dogs-panel:has(.dp-meds) .dp-dog {
+  padding: 5px 10px;
+}
+.dogs-panel:has(.dp-meds) .dp-stat {
+  padding: 6px 12px;
+}

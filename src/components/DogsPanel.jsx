@@ -212,8 +212,8 @@ function MedsBlock({ meds, who, nowTs }) {
                   {m.current ? 'Aplicado ✓' : `Ya apliqué la de ${medWhen(target.due, nowTs).replace(/^a /, '')}`}
                 </button>
                 {m.current ? (
-                  <button type="button" className="btn ghost xs" disabled={needWho} onClick={() => run(() => actions.skipMed(target.id), 'Anotado: no se aplicó')}>
-                    No se aplicó
+                  <button type="button" className="link-btn dp-med-skip" disabled={needWho} onClick={() => run(() => actions.skipMed(target.id), 'Anotado: no se aplicó')}>
+                    no se aplicó
                   </button>
                 ) : null}
               </div>
