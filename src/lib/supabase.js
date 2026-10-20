@@ -30,6 +30,7 @@ export const TABLES = {
   day_acks: ['day'],
   dog_meds: ['id'],
   cycle_starts: ['id'],
+  weights: ['id'],
 };
 
 // Tablas que se escuchan en tiempo real.
@@ -52,6 +53,7 @@ export const LIVE_TABLES = [
   'day_acks',
   'dog_meds',
   'cycle_starts',
+  'weights',
 ];
 
 const PAGE = 1000;

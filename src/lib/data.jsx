@@ -200,6 +200,14 @@ export function DataProvider({ children }) {
         unwrap(await supabase.from('cycle_starts').delete().eq('id', id));
         await reload('cycle_starts');
       },
+      async logWeight(personId, kg) {
+        unwrap(await supabase.from('weights').insert({ person_id: personId, kg, measured_at: new Date().toISOString() }));
+        await reload('weights');
+      },
+      async undoWeight(id) {
+        unwrap(await supabase.from('weights').delete().eq('id', id));
+        await reload('weights');
+      },
       async giveMed(id, byId) {
         unwrap(await supabase.from('dog_meds').update({ given_at: new Date().toISOString(), given_by: byId, skipped: false }).eq('id', id));
         await reload('dog_meds');

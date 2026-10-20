@@ -167,6 +167,8 @@ export function buildModel(db) {
     // Aplicaciones programadas de tratamientos de las perras (colirio, etc.).
     // Inicios de período (ciclo), por persona.
     cycles: [...(db.cycle_starts ?? [])].sort((a, b) => a.started_on.localeCompare(b.started_on)),
+    // Pesadas (kg con un decimal), por fecha.
+    weights: [...(db.weights ?? [])].map((w) => ({ ...w, kg: Number(w.kg) })).sort((a, b) => new Date(a.measured_at) - new Date(b.measured_at) || a.id - b.id),
     meds: [...(db.dog_meds ?? [])].sort((a, b) => new Date(a.due_at) - new Date(b.due_at) || a.id - b.id),
     events: [...db.events].sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at)),
     logsByChore,

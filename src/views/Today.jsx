@@ -2,10 +2,11 @@ import { useMemo, useState } from 'react';
 import { useApp } from '../lib/appctx.js';
 import { useData, useRun } from '../lib/data.jsx';
 import { useKiosk } from '../lib/kiosk.jsx';
-import { addDays, calDayOf, calTodayISO, dayMinutesOf } from '../lib/dates.js';
+import { addDays, calDayOf, calTodayISO, dayMinutesOf, fmtDayShort, fmtTime } from '../lib/dates.js';
+import { fmt1, fmtSigned } from '../lib/format.js';
 import { visibleEvents } from '../lib/metrics.js';
 import { computeDay, cycleState, CYCLE_PHASE, rulesOf } from '../lib/status.js';
-import { Avatar } from '../components/ui.jsx';
+import { Avatar, Dialog } from '../components/ui.jsx';
 import { FootIcon, NoTraces } from '../components/prints.jsx';
 import { Dot, lv, StatusChip } from '../components/Semaforo.jsx';
 import { DogsPanel } from '../components/DogsPanel.jsx';
@@ -38,6 +39,7 @@ function KioskToday() {
       </section>
       <section className="kcol kcol-agenda" aria-label="Agenda">
         <CycleCard />
+        <WeightCards />
         <AgendaPanel />
       </section>
     </div>
@@ -220,6 +222,136 @@ function CycleCard() {
       ) : null}
       </div>
     </div>
+  );
+}
+
+// ───────────── peso ─────────────
+
+/** "hoy 17:30" · "ayer 08:10" · "18 oct" */
+function whenLabel(ts, cal) {
+  const d = calDayOf(ts);
+  if (d === cal) return `hoy ${fmtTime(ts)}`;
+  if (d === addDays(cal, -1)) return `ayer ${fmtTime(ts)}`;
+  return fmtDayShort(d);
+}
+
+/** Una tarjeta por cada persona con al menos una pesada. Se oculta con visitas. */
+function WeightCards() {
+  const { model } = useData();
+  const kiosk = useKiosk();
+  if (kiosk.visitas || !model.weights?.length) return null;
+  const ids = [...new Set(model.weights.map((w) => w.person_id))];
+  return ids
+    .map((id) => model.peopleById.get(id))
+    .filter(Boolean)
+    .map((p) => <WeightCard key={p.id} person={p} />);
+}
+
+function WeightCard({ person }) {
+  const { model, actions } = useData();
+  const { now } = useApp();
+  const run = useRun();
+  const [open, setOpen] = useState(false);
+  const cal = calTodayISO(new Date(now));
+  const list = model.weights.filter((w) => w.person_id === person.id);
+  const last = list[list.length - 1];
+  const prev = list[list.length - 2];
+  const recent = last && Date.now() - new Date(last.created_at ?? 0).getTime() < 10 * 60 * 1000;
+  const diff = prev ? Math.round((last.kg - prev.kg) * 10) / 10 : null;
+  return (
+    <div className="kblock weight-card">
+      <header className="kblock-head">
+        <span className="kblock-title">
+          <Avatar person={person} size="sm" /> ⚖️ Peso
+        </span>
+        <button type="button" className="btn ghost xs" onClick={() => setOpen(true)}>
+          + Pesada
+        </button>
+      </header>
+      <div className="weight">
+        <span className="weight-val">
+          <strong>{fmt1(last.kg)}</strong> kg
+        </span>
+        <span className="weight-sub">
+          {whenLabel(last.measured_at, cal)}
+          {diff != null ? ` · ${fmtSigned(diff)} kg vs ${whenLabel(prev.measured_at, cal)}` : ''}
+        </span>
+        {recent ? (
+          <button type="button" className="link-btn" onClick={() => run(() => actions.undoWeight(last.id), 'Borrado')}>
+            deshacer
+          </button>
+        ) : null}
+      </div>
+      {open ? <WeightDialog person={person} list={list} cal={cal} onClose={() => setOpen(false)} /> : null}
+    </div>
+  );
+}
+
+function WeightDialog({ person, list, cal, onClose }) {
+  const { actions } = useData();
+  const run = useRun();
+  const last = list[list.length - 1];
+  const [text, setText] = useState(last ? fmt1(last.kg) : '');
+  const parsed = Number(String(text).replace(',', '.').trim());
+  const kg = Number.isFinite(parsed) ? Math.round(parsed * 10) / 10 : NaN;
+  const valid = text !== '' && kg >= 20 && kg <= 300;
+  const step = (d) => setText(fmt1(Math.round(((valid ? kg : last?.kg ?? 70) + d) * 10) / 10));
+  const save = () =>
+    run(async () => {
+      await actions.logWeight(person.id, kg);
+      onClose();
+    }, 'Peso anotado');
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      title={`⚖️ Peso de ${person.short_name}`}
+      footer={
+        <>
+          <button type="button" className="btn ghost" onClick={onClose}>
+            Cancelar
+          </button>
+          <button type="button" className="btn primary" disabled={!valid} onClick={save}>
+            Guardar
+          </button>
+        </>
+      }
+    >
+      <div className="weight-input">
+        <button type="button" className="btn ghost" aria-label="Restar 100 gramos" onClick={() => step(-0.1)}>
+          −
+        </button>
+        <label>
+          <input
+            type="text"
+            inputMode="decimal"
+            autoComplete="off"
+            value={text}
+            aria-label="Peso en kilos, con un decimal"
+            onChange={(e) => setText(e.target.value.replace(/[^0-9.,]/g, ''))}
+            onFocus={(e) => e.target.select()}
+          />
+          <span>kg</span>
+        </label>
+        <button type="button" className="btn ghost" aria-label="Sumar 100 gramos" onClick={() => step(0.1)}>
+          +
+        </button>
+      </div>
+      <p className="weight-help">{valid ? `Se guarda ${fmt1(kg)} kg, con la hora de ahora.` : 'Escribí el peso en kilos, con un decimal (por ejemplo 94,4).'}</p>
+      {list.length ? (
+        <ul className="weight-hist">
+          {list
+            .slice(-5)
+            .reverse()
+            .map((w) => (
+              <li key={w.id}>
+                <span>{whenLabel(w.measured_at, cal)}</span>
+                <strong>{fmt1(w.kg)} kg</strong>
+              </li>
+            ))}
+        </ul>
+      ) : null}
+    </Dialog>
   );
 }
 

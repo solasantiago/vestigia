@@ -68,6 +68,12 @@ Las ideas sueltas, con su costo y lo que ya se definió, están en [Ideas pendie
 - "¿Te vino? Hoy / Ayer" aparece solo antes de la primera marca y desde 26 días después de la última. Se puede deshacer durante 10 minutos.
 - Sin semáforo ni avisos; se oculta en modo visitas. La configuración y las fechas viven solo en la base.
 
+## v0.1.9 — Peso ✅ (20/10/2026)
+
+- Tarjeta **⚖️ Peso** en la columna de la agenda, para quien tenga al menos una pesada cargada: el último peso en kg con un decimal, cuándo fue y la diferencia con la pesada anterior.
+- **"+ Pesada"** abre un cuadro con el último peso para ajustar con − / + (de a 100 g) o escribirlo; se guarda con la hora de ahora y muestra las últimas 5 pesadas. Se puede deshacer durante 10 minutos.
+- Sin semáforo ni avisos; se oculta en modo visitas. Los valores viven solo en la base.
+
 ## v0.2 — Cada uno en su celular (propuesta)
 
 - Cuentas de Mica y de Santi, con la privacidad de la §7 del documento funcional.
