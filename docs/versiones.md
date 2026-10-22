@@ -97,6 +97,15 @@ Las ideas sueltas, con su costo y lo que ya se definió, están en [Ideas pendie
 - **Tarjeta "Salud de …"** en la columna de la agenda: junta peso, ejercicio y comidas en una sola tarjeta para que la agenda siga entrando en el iPad. Comidas muestra las calorías del día, verdura y fruta (referencia 3 y 2 por día), proteína y la última sugerencia; "Ver" abre cada comida con sus porciones y el historial por día.
 - Sin semáforo ni avisos; se oculta en modo visitas. Los valores viven solo en la base.
 
+## v0.1.14 — Medidas y tablero de comidas ✅ (22/10/2026)
+
+- **Medidas del cuerpo** (cintura, cadera, pecho, brazo y muslo, en cm): se cargan desde el chat cada 2 a 4 semanas. En la tarjeta de salud, la cintura con la diferencia contra la medición anterior; "Ver" muestra el cambio desde el inicio y el historial.
+- **Tablero de comidas** al tocar "Ver":
+  - una **lectura en palabras** del día y de la semana (qué viene bien, qué falta y qué es lo que más se desvía);
+  - el **balance del día** contra la referencia, con la banda de rango: proteína 1,2–1,6 g por kg del último peso, verdura 3 y fruta 2 porciones, ultraprocesados hasta 1, grasas 20–35 % y carbohidratos 45–65 % de las calorías;
+  - la **semana en una grilla**: ✓ en rango, ↓ abajo, ↑ arriba; hoy cuenta como "en curso" hasta que termina el día.
+- Son referencias generales para orientarse, no un plan: sin meta de calorías.
+
 ## v0.2 — Cada uno en su celular (propuesta)
 
 - Cuentas de Mica y de Santi, con la privacidad de la §7 del documento funcional.

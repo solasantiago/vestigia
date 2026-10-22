@@ -185,6 +185,13 @@ export function buildModel(db) {
         fruit_servings: Number(m.fruit_servings ?? 0),
       }))
       .sort((a, b) => new Date(a.eaten_at) - new Date(b.eaten_at) || a.id - b.id),
+    // Medidas del cuerpo (cm), cargadas desde el chat, por fecha.
+    measures: [...(db.body_measures ?? [])]
+      .map((m) => ({
+        ...m,
+        ...Object.fromEntries(['waist_cm', 'hip_cm', 'chest_cm', 'arm_cm', 'thigh_cm'].map((k) => [k, m[k] == null ? null : Number(m[k])])),
+      }))
+      .sort((a, b) => new Date(a.measured_at) - new Date(b.measured_at) || a.id - b.id),
     meds: [...(db.dog_meds ?? [])].sort((a, b) => new Date(a.due_at) - new Date(b.due_at) || a.id - b.id),
     events: [...db.events].sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at)),
     logsByChore,

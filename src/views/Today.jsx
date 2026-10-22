@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useApp } from '../lib/appctx.js';
 import { useData, useRun } from '../lib/data.jsx';
 import { useKiosk } from '../lib/kiosk.jsx';
-import { addDays, calDayOf, calTodayISO, dayMinutesOf, dow, fmtDayLong, fmtDayShort, fmtDuration, fmtTime, fmtWeekday } from '../lib/dates.js';
+import { addDays, calDayOf, calTodayISO, dayMinutesOf, dow, fmtDayLong, range, fmtDayShort, fmtDuration, fmtTime, fmtWeekday } from '../lib/dates.js';
 import { fmt1, fmt2, fmtInt, fmtSigned } from '../lib/format.js';
 import { visibleEvents } from '../lib/metrics.js';
 import { computeDay, cycleState, CYCLE_PHASE, rulesOf } from '../lib/status.js';
@@ -519,12 +519,145 @@ function dayTotals(meals) {
 }
 const fmtServ = (v) => (Number.isInteger(v) ? String(v) : fmt1(v));
 
+// ── balance de comidas: referencias generales (no son un plan) ──
+// Proteína 1,2–1,6 g por kg de peso (para quien entrena); verdura 3 y fruta 2 porciones;
+// ultraprocesados como mucho 1 por día; grasas 20–35 % y carbohidratos 45–65 % de las calorías.
+const CRIT = [
+  { k: 'protein', label: 'Proteína', short: 'Prot.', noun: 'proteína', the: 'la proteína', f: true },
+  { k: 'veg', label: 'Verdura', short: 'Verdura', noun: 'verdura', the: 'la verdura', f: true },
+  { k: 'fruit', label: 'Fruta', short: 'Fruta', noun: 'fruta', the: 'la fruta', f: true },
+  { k: 'ultra', label: 'Ultraproc.', short: 'Ultrapr.', noun: 'ultraprocesados', the: 'los ultraprocesados' },
+  { k: 'fatPct', label: 'Grasas', short: 'Grasas', noun: 'grasas', the: 'las grasas', f: true },
+  { k: 'carbPct', label: 'Carbohidratos', short: 'Carbos', noun: 'carbohidratos', the: 'los carbohidratos' },
+];
+
+function evalDay(t, kg, partial) {
+  const r = {};
+  const below = (v, lo) => (v >= lo ? 'ok' : partial ? 'pending' : 'low');
+  if (t.n === 0) {
+    for (const c of CRIT) r[c.k] = { status: 'none' };
+    return r;
+  }
+  const pLo = kg ? Math.round(kg * 1.2) : null;
+  const pHi = kg ? Math.round(kg * 1.6) : null;
+  r.protein = t.protein == null ? { status: 'na' } : { value: t.protein, lo: pLo, hi: pHi, status: pLo ? below(t.protein, pLo) : 'na' };
+  r.veg = { value: t.veg, lo: VEG_GOAL, status: below(t.veg, VEG_GOAL) };
+  r.fruit = { value: t.fruit, lo: FRUIT_GOAL, status: below(t.fruit, FRUIT_GOAL) };
+  r.ultra = { value: t.ultra, lo: 0, hi: 1, status: t.ultra > 1 ? 'high' : 'ok' };
+  const kc = (t.protein ?? 0) * 4 + (t.carbs ?? 0) * 4 + (t.fat ?? 0) * 9;
+  if (t.fat != null && t.carbs != null && kc > 0) {
+    const fp = ((t.fat * 9) / kc) * 100;
+    const cp = ((t.carbs * 4) / kc) * 100;
+    r.fatPct = { value: fp, lo: 20, hi: 35, status: fp > 35 ? 'high' : fp < 20 && !partial ? 'low' : 'ok' };
+    r.carbPct = { value: cp, lo: 45, hi: 65, status: cp > 65 ? 'high' : cp < 45 && !partial ? 'low' : 'ok' };
+  } else {
+    r.fatPct = { status: 'na' };
+    r.carbPct = { status: 'na' };
+  }
+  return r;
+}
+
+const ST_MARK = { ok: '✓', low: '↓', high: '↑', pending: '·', none: '', na: '' };
+const ST_TEXT = { ok: 'en rango', low: 'abajo', high: 'arriba', pending: 'en curso', none: 'sin datos', na: '—' };
+
+function joinEs(xs) {
+  if (xs.length <= 1) return xs.join('');
+  return `${xs.slice(0, -1).join(', ')} y ${xs[xs.length - 1]}`;
+}
+
+/** Dos o tres oraciones con lo que dicen los datos: el día y la semana. */
+function mealStory({ ev, day, today, week }) {
+  const MAIN = ['protein', 'veg', 'fruit'];
+  const of = (st, keys = CRIT.map((c) => c.k)) => CRIT.filter((c) => keys.includes(c.k) && ev[c.k]?.status === st);
+  const isToday = day === today;
+  const when = isToday ? 'Hoy' : day === addDays(today, -1) ? 'Ayer' : 'Ese día';
+  const out = [];
+  if (Object.values(ev).every((x) => x.status === 'none')) {
+    out.push(isToday ? 'Todavía no hay nada cargado hoy.' : 'Ese día no hay comidas cargadas.');
+  } else {
+    const good = of('ok', MAIN).map((c) => c.noun);
+    if (ev.ultra?.status === 'ok' && ev.ultra.value === 0) good.push('sin ultraprocesados');
+    const high = of('high').map((c) => c.the);
+    const low = of('low').map((c) => c.noun);
+    const pending = of('pending').map((c) => c.noun);
+    const bits = [];
+    if (good.length) {
+      const g = good.filter((x) => !x.startsWith('sin '));
+      const sin = good.find((x) => x.startsWith('sin '));
+      bits.push(g.length ? `${isToday ? 'venís' : 'estuviste'} bien de ${joinEs(g)}${sin ? `, ${sin}` : ''}` : `${isToday ? 'venís' : 'estuviste'} ${sin}`);
+    }
+    if (high.length) bits.push(`${isToday ? 'se están yendo arriba' : 'se fueron arriba'} ${joinEs(high)}`);
+    if (low.length) bits.push(`quedaste corto de ${joinEs(low)}`);
+    let txt = bits.length ? `${when} ${bits.join('; ')}.` : isToday ? 'Hoy recién arranca.' : `${when} quedó a mitad de camino.`;
+    if (pending.length) txt += ` Todavía ${pending.length > 1 ? 'faltan' : 'falta'} ${joinEs(pending)}.`;
+    out.push(txt);
+  }
+  const counted = week.filter((w) => !w.partial && w.n > 0);
+  if (counted.length >= 2) {
+    const miss = CRIT.map((c) => ({
+      c,
+      low: counted.filter((w) => w.ev[c.k]?.status === 'low').length,
+      high: counted.filter((w) => w.ev[c.k]?.status === 'high').length,
+    }))
+      .map((m) => ({ ...m, n: m.low + m.high }))
+      .sort((a, b) => b.n - a.n);
+    const top = miss[0];
+    if (top.n === 0) out.push(`En los últimos días el balance viene parejo: los ${counted.length} días con datos quedaron en rango.`);
+    else {
+      const how = top.high > top.low ? (top.c.f ? 'se pasó' : 'se pasaron') : top.c.f ? 'quedó corta' : 'quedaron cortos';
+      out.push(`En la semana, lo que más se desvía es ${top.c.the}: ${how} ${top.n} de ${counted.length} días con datos.`);
+      const steady = miss.filter((m) => m.n === 0 && MAIN.includes(m.c.k)).map((m) => m.c.noun);
+      if (steady.length) out.push(`${steady.length > 1 ? 'Vienen firmes' : 'Viene firme'}: ${joinEs(steady)}.`);
+    }
+  } else if (counted.length === 1) {
+    out.push('Con un par de días más cargados ya se va a ver el patrón de la semana.');
+  }
+  return out.join(' ');
+}
+
+function BalanceBar({ label, item, unit, fmt, max }) {
+  if (!item || item.status === 'na' || item.status === 'none' || item.value == null) return null;
+  const top = Math.max(max, item.value * 1.1);
+  const lo = item.lo ?? 0;
+  const hi = item.hi ?? top;
+  const pct = (v) => `${Math.max(0, Math.min(100, (v / top) * 100))}%`;
+  const ref = item.hi != null && item.lo != null && item.lo > 0 ? `${fmt(item.lo)}–${fmt(item.hi)}${unit}` : item.hi != null ? `hasta ${fmt(item.hi)}${unit}` : `${fmt(item.lo)}${unit} o más`;
+  return (
+    <div className={`bal st-${item.status}`}>
+      <div className="bal-top">
+        <span className="bal-label">{label}</span>
+        <span className="bal-val">
+          {fmt(item.value)}
+          {unit}
+        </span>
+        <span className="bal-st">
+          {ST_MARK[item.status]} {ST_TEXT[item.status]}
+        </span>
+      </div>
+      <div className="bal-track" aria-hidden="true">
+        <span className="bal-band" style={{ left: pct(lo), width: `calc(${pct(hi)} - ${pct(lo)})` }} />
+        <span className="bal-fill" style={{ width: pct(item.value) }} />
+      </div>
+      <span className="bal-ref">Referencia: {ref}</span>
+    </div>
+  );
+}
+
 function MealDialog({ person, list, onClose }) {
   const { today } = useApp();
   const days = [...new Set(list.map((m) => m.day))].sort().reverse();
   const [day, setDay] = useState(days.includes(today) ? today : days[0]);
   const meals = list.filter((m) => m.day === day);
   const t = dayTotals(meals);
+  const { model } = useData();
+  const kgList = model.weights.filter((w) => w.person_id === person.id);
+  const kg = kgList.length ? kgList[kgList.length - 1].kg : null;
+  const ev = evalDay(t, kg, day === today);
+  const week = range(addDays(today, -6), today).map((d) => {
+    const ms = list.filter((m) => m.day === d);
+    return { d, partial: d === today, ev: evalDay(dayTotals(ms), kg, d === today), n: ms.length };
+  });
+  const story = mealStory({ ev, day, today, week });
   const label = (d) => (d === today ? 'Hoy' : d === addDays(today, -1) ? 'Ayer' : `${fmtWeekday(d, 'short')} ${Number(d.slice(8))}/${Number(d.slice(5, 7))}`);
   const stats = [
     ['Calorías', t.kcal != null ? `≈ ${fmtInt(t.kcal)}` : '—'],
@@ -553,6 +686,58 @@ function MealDialog({ person, list, onClose }) {
             {t.ultra ? ` · ${t.ultra} con ultraprocesados` : ''}
           </span>
         </div>
+        <p className="meal-story">{story}</p>
+
+        <section className="wo-sec">
+          <h4>Balance {day === today ? 'de hoy (hasta ahora)' : 'del día'}</h4>
+          <div className="bals">
+            <BalanceBar label="Proteína" item={ev.protein} unit=" g" fmt={fmtInt} max={kg ? kg * 1.9 : 150} />
+            <BalanceBar label="Verdura" item={ev.veg} unit=" porc." fmt={fmtServ} max={5} />
+            <BalanceBar label="Fruta" item={ev.fruit} unit=" porc." fmt={fmtServ} max={4} />
+            <BalanceBar label="Ultraprocesados" item={ev.ultra} unit="" fmt={fmtServ} max={3} />
+            <BalanceBar label="Grasas" item={ev.fatPct} unit=" %" fmt={fmtInt} max={60} />
+            <BalanceBar label="Carbohidratos" item={ev.carbPct} unit=" %" fmt={fmtInt} max={90} />
+          </div>
+          {ev.protein?.status === 'na' && !kg ? <p className="muted small">La referencia de proteína sale del último peso cargado.</p> : null}
+        </section>
+
+        <section className="wo-sec">
+          <h4>La semana: cuándo se desvía</h4>
+          <div className="wo-scroll">
+            <table className="bal-grid">
+              <thead>
+                <tr>
+                  <th />
+                  {week.map((w) => (
+                    <th key={w.d}>
+                      <button type="button" className={`link-btn ${w.d === day ? 'sel' : ''}`} onClick={() => w.n && setDay(w.d)} disabled={!w.n}>
+                        <span>{w.d === today ? 'hoy' : fmtWeekday(w.d, 'short').slice(0, 3)}</span>
+                        <span>{Number(w.d.slice(8))}</span>
+                      </button>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {CRIT.map((c) => (
+                  <tr key={c.k}>
+                    <th>{c.short}</th>
+                    {week.map((w) => {
+                      const st = w.ev[c.k]?.status ?? 'none';
+                      return (
+                        <td key={w.d} className={`st-${st} ${w.d === day ? 'sel' : ''}`} title={`${c.label}: ${ST_TEXT[st]}`}>
+                          {st === 'none' ? '' : ST_MARK[st] || '—'}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="muted small">✓ en rango · ↓ abajo · ↑ arriba · · en curso (hoy) · vacío: sin comidas cargadas.</p>
+        </section>
+
         <dl className="wo-stats">
           {stats.map(([k, v]) => (
             <div key={k}>
@@ -656,7 +841,7 @@ function HealthCards() {
   const { model } = useData();
   const kiosk = useKiosk();
   if (kiosk.visitas) return null;
-  const ids = [...new Set([...(model.weights ?? []), ...(model.workouts ?? []), ...(model.meals ?? [])].map((x) => x.person_id))];
+  const ids = [...new Set([...(model.weights ?? []), ...(model.measures ?? []), ...(model.workouts ?? []), ...(model.meals ?? [])].map((x) => x.person_id))];
   return model.people.filter((p) => ids.includes(p.id)).map((p) => <HealthCard key={p.id} person={p} />);
 }
 
@@ -668,6 +853,7 @@ function HealthCard({ person }) {
   const weights = model.weights.filter((w) => w.person_id === person.id);
   const workouts = model.workouts.filter((w) => w.person_id === person.id);
   const meals = model.meals.filter((m) => m.person_id === person.id);
+  const measures = (model.measures ?? []).filter((m) => m.person_id === person.id);
   return (
     <div className="kblock health-card">
       <header className="kblock-head">
@@ -676,9 +862,11 @@ function HealthCard({ person }) {
         </span>
       </header>
       {weights.length ? <WeightRow list={weights} cal={cal} onOpen={() => setDlg('peso')} /> : null}
+      {measures.length ? <MeasureRow list={measures} cal={cal} onOpen={() => setDlg('medidas')} /> : null}
       {workouts.length ? <WorkoutRow list={workouts} cal={cal} onOpen={() => setDlg('ejercicio')} /> : null}
       {meals.length ? <MealRow list={meals} today={today} onOpen={() => setDlg('comidas')} /> : null}
       {dlg === 'peso' ? <WeightDialog person={person} list={weights} cal={cal} onClose={() => setDlg(null)} /> : null}
+      {dlg === 'medidas' ? <MeasureDialog person={person} list={measures} cal={cal} onClose={() => setDlg(null)} /> : null}
       {dlg === 'ejercicio' ? <WorkoutDialog person={person} list={workouts} cal={cal} onClose={() => setDlg(null)} /> : null}
       {dlg === 'comidas' ? <MealDialog person={person} list={meals} onClose={() => setDlg(null)} /> : null}
     </div>
@@ -738,6 +926,119 @@ function WeightRow({ list, cal, onOpen }) {
         </button>
       }
     />
+  );
+}
+
+const MEASURES = [
+  ['waist_cm', 'Cintura'],
+  ['hip_cm', 'Cadera'],
+  ['chest_cm', 'Pecho'],
+  ['arm_cm', 'Brazo'],
+  ['thigh_cm', 'Muslo'],
+];
+/** La medición anterior que tenga ese valor. */
+const prevWith = (list, i, k) => [...list.slice(0, i)].reverse().find((m) => m[k] != null);
+
+function MeasureRow({ list, cal, onOpen }) {
+  const i = list.length - 1;
+  const last = list[i];
+  const keys = MEASURES.filter(([k]) => last[k] != null);
+  const [mk, mLabel] = keys[0] ?? MEASURES[0];
+  const prev = prevWith(list, i, mk);
+  const diff = prev ? Math.round((last[mk] - prev[mk]) * 10) / 10 : null;
+  const others = keys.slice(1, 3).map(([k, l]) => `${l.toLowerCase()} ${fmt1(last[k])}`);
+  return (
+    <HRow
+      icon="📏"
+      main={
+        <>
+          {mLabel} <strong>{fmt1(last[mk])}</strong> cm
+        </>
+      }
+      sub={[whenLabel(last.measured_at, cal), diff != null ? `${fmtSigned(diff)} cm vs ${whenLabel(prev.measured_at, cal)}` : null, ...others].filter(Boolean).join(' · ')}
+      action={
+        <button type="button" className="btn ghost xs" onClick={onOpen}>
+          Ver
+        </button>
+      }
+    />
+  );
+}
+
+function MeasureDialog({ person, list, cal, onClose }) {
+  const keys = MEASURES.filter(([k]) => list.some((m) => m[k] != null));
+  const first = (k) => list.find((m) => m[k] != null);
+  const lastOf = (k) => [...list].reverse().find((m) => m[k] != null);
+  const rows = [...list].reverse();
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      title={`📏 Medidas de ${person.short_name}`}
+      footer={
+        <button type="button" className="btn primary" onClick={onClose}>
+          Listo
+        </button>
+      }
+    >
+      <div className="wo">
+        <dl className="wo-stats">
+          {keys.map(([k, l]) => {
+            const a = first(k);
+            const b = lastOf(k);
+            const d = a && b && a !== b ? Math.round((b[k] - a[k]) * 10) / 10 : null;
+            return (
+              <div key={k}>
+                <dt>{l}</dt>
+                <dd>
+                  {fmt1(b[k])} cm
+                  {d != null ? <span className="wo-delta"> {fmtSigned(d)} desde el inicio</span> : null}
+                </dd>
+              </div>
+            );
+          })}
+        </dl>
+        <section className="wo-sec">
+          <h4>Historial</h4>
+          <div className="wo-scroll">
+            <table className="wo-table">
+              <thead>
+                <tr>
+                  <th>Día</th>
+                  {keys.map(([k, l]) => (
+                    <th key={k}>{l}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((m) => (
+                  <tr key={m.id}>
+                    <td>{whenLabel(m.measured_at, cal)}</td>
+                    {keys.map(([k]) => (
+                      <td key={k}>{m[k] != null ? fmt1(m[k]) : '—'}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {rows.some((m) => m.note) ? (
+            <ul className="meal-items">
+              {rows
+                .filter((m) => m.note)
+                .map((m) => (
+                  <li key={m.id}>
+                    <span>
+                      <span className="muted">{whenLabel(m.measured_at, cal)}:</span> {m.note}
+                    </span>
+                  </li>
+                ))}
+            </ul>
+          ) : null}
+          <p className="muted small">En cm. Conviene medir cada 2 a 4 semanas, a la mañana, en ayunas y sin apretar la cinta.</p>
+        </section>
+      </div>
+    </Dialog>
   );
 }
 

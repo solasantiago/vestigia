@@ -7,7 +7,7 @@ Los rastros de cada día en casa: check-ins de hábitos, paseos, caca y comida d
 
 La prueba de concepto con datos de ejemplo vive aparte, en [tracker_demo](https://github.com/solasantiago/tracker_demo).
 
-## Versión actual: v0.1.13, el tablero del iPad (y el iPhone)
+## Versión actual: v0.1.14, el tablero del iPad (y el iPhone)
 
 Una sola cuenta, **Casa**, con la sesión abierta en el iPad (pensado para el iPad horizontal, 1080 × 810).
 
@@ -33,7 +33,8 @@ Si algo está en rojo, se queda en el estado del día con una franja roja arriba
 - **Salud de cada persona** (para quien tenga datos cargados), en una sola tarjeta:
   - **Peso:** el último en kg con un decimal y la diferencia con el anterior; "+ Pesada" para anotar uno nuevo.
   - **Ejercicio** (solo lectura): la última sesión del Apple Watch, sus zonas de pulso y las sesiones de la semana; "Ver" muestra ritmo, calorías, zonas, tramos por km, recuperación y el historial.
-  - **Comidas** (solo lectura): calorías estimadas del día, verdura y fruta, proteína y una sugerencia para la próxima comida; "Ver" muestra cada comida y el historial por día. Se cargan desde el chat con fotos.
+  - **Medidas** (solo lectura): la cintura y su cambio; "Ver" muestra todas las medidas, el cambio desde el inicio y el historial. Se cargan desde el chat.
+  - **Comidas** (solo lectura): calorías estimadas del día, verdura y fruta, proteína y una sugerencia para la próxima comida. "Ver" abre un tablero con una lectura en palabras del día y la semana, el balance contra la referencia y una grilla de la semana que marca cuándo se desvía. Se cargan desde el chat con fotos.
   - Sin semáforo; se oculta en modo visitas.
 - **Agenda** de hoy y los próximos días.
 

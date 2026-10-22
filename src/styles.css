@@ -4701,3 +4701,141 @@ select {
   -webkit-line-clamp: unset;
   display: block;
 }
+/* v0.1.14 · medidas */
+.wo-delta {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.wo-scroll {
+  overflow-x: auto;
+}
+/* v0.1.14 · tablero de comidas */
+.meal-story {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  font-size: 15.5px;
+  font-weight: 600;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+.bals {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.bal {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.bal-top {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.bal-label {
+  font-size: 14px;
+  font-weight: 700;
+}
+.bal-val {
+  font-size: 14px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.bal-st {
+  margin-left: auto;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.bal.st-ok .bal-st { color: var(--st-ok-text); }
+.bal.st-low .bal-st,
+.bal.st-high .bal-st { color: var(--st-warn-text); }
+.bal-track {
+  position: relative;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.bal-band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: color-mix(in oklab, var(--st-ok) 22%, transparent);
+  border-inline: 2px solid color-mix(in oklab, var(--st-ok) 60%, transparent);
+}
+.bal-fill {
+  position: absolute;
+  left: 0;
+  top: 2px;
+  bottom: 2px;
+  border-radius: 3px;
+  background: var(--text-2);
+}
+.bal.st-ok .bal-fill { background: var(--st-ok); }
+.bal.st-low .bal-fill,
+.bal.st-high .bal-fill { background: var(--st-warn); }
+.bal-ref {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.bal-grid {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 3px;
+  font-size: 13px;
+}
+.bal-grid th {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: left;
+  white-space: nowrap;
+}
+.bal-grid thead th {
+  text-align: center;
+}
+.bal-grid thead .link-btn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 12px;
+  line-height: 1.2;
+}
+.bal-grid thead .link-btn.sel {
+  color: var(--text);
+  font-weight: 800;
+}
+.bal-grid thead .link-btn:disabled {
+  text-decoration: none;
+  opacity: 0.6;
+  cursor: default;
+}
+.bal-grid td {
+  height: 26px;
+  min-width: 30px;
+  text-align: center;
+  border-radius: 6px;
+  font-weight: 800;
+  background: var(--surface-2);
+  color: var(--muted);
+}
+.bal-grid td.st-ok {
+  background: color-mix(in oklab, var(--st-ok) 18%, var(--surface));
+  color: var(--st-ok-text);
+}
+.bal-grid td.st-low,
+.bal-grid td.st-high {
+  background: color-mix(in oklab, var(--st-warn) 22%, var(--surface));
+  color: var(--st-warn-text);
+}
+.bal-grid td.sel {
+  outline: 2px solid var(--border-strong);
+}
