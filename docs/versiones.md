@@ -74,6 +74,12 @@ Las ideas sueltas, con su costo y lo que ya se definió, están en [Ideas pendie
 - **"+ Pesada"** abre un cuadro con el último peso para ajustar con − / + (de a 100 g) o escribirlo; se guarda con la hora de ahora y muestra las últimas 5 pesadas. Se puede deshacer durante 10 minutos.
 - Sin semáforo ni avisos; se oculta en modo visitas. Los valores viven solo en la base.
 
+## v0.1.10 — Ejercicio ✅ (21/10/2026)
+
+- Tarjeta **🏃 Ejercicio** debajo del peso, para quien tenga entrenamientos cargados: la última sesión (duración, distancia, cuándo, pulso promedio y esfuerzo) y cuántas van en la semana.
+- **Solo lectura:** los entrenamientos se cargan desde el chat con las capturas de la app Fitness del Apple Watch; la app no tiene botón para cargarlos. Se guardan también el pulso máximo, las calorías y los minutos en cada zona.
+- Sin semáforo ni avisos; se oculta en modo visitas. Los valores viven solo en la base. Que lleguen solos desde el Watch queda en [Ideas pendientes](ideas.md#9--ejercicio-automático-desde-el-apple-watch).
+
 ## v0.2 — Cada uno en su celular (propuesta)
 
 - Cuentas de Mica y de Santi, con la privacidad de la §7 del documento funcional.

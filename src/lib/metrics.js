@@ -169,6 +169,10 @@ export function buildModel(db) {
     cycles: [...(db.cycle_starts ?? [])].sort((a, b) => a.started_on.localeCompare(b.started_on)),
     // Pesadas (kg con un decimal), por fecha.
     weights: [...(db.weights ?? [])].map((w) => ({ ...w, kg: Number(w.kg) })).sort((a, b) => new Date(a.measured_at) - new Date(b.measured_at) || a.id - b.id),
+    // Entrenamientos cargados desde el chat (capturas del Watch), por fecha.
+    workouts: [...(db.workouts ?? [])]
+      .map((w) => ({ ...w, distance_km: w.distance_km == null ? null : Number(w.distance_km) }))
+      .sort((a, b) => new Date(a.started_at) - new Date(b.started_at) || a.id - b.id),
     meds: [...(db.dog_meds ?? [])].sort((a, b) => new Date(a.due_at) - new Date(b.due_at) || a.id - b.id),
     events: [...db.events].sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at)),
     logsByChore,

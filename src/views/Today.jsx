@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react';
 import { useApp } from '../lib/appctx.js';
 import { useData, useRun } from '../lib/data.jsx';
 import { useKiosk } from '../lib/kiosk.jsx';
-import { addDays, calDayOf, calTodayISO, dayMinutesOf, fmtDayShort, fmtTime } from '../lib/dates.js';
-import { fmt1, fmtSigned } from '../lib/format.js';
+import { addDays, calDayOf, calTodayISO, dayMinutesOf, dow, fmtDayShort, fmtDuration, fmtTime } from '../lib/dates.js';
+import { fmt1, fmt2, fmtSigned } from '../lib/format.js';
 import { visibleEvents } from '../lib/metrics.js';
 import { computeDay, cycleState, CYCLE_PHASE, rulesOf } from '../lib/status.js';
 import { Avatar, Dialog } from '../components/ui.jsx';
@@ -40,6 +40,7 @@ function KioskToday() {
       <section className="kcol kcol-agenda" aria-label="Agenda">
         <CycleCard />
         <WeightCards />
+        <WorkoutCards />
         <AgendaPanel />
       </section>
     </div>
@@ -352,6 +353,50 @@ function WeightDialog({ person, list, cal, onClose }) {
         </ul>
       ) : null}
     </Dialog>
+  );
+}
+
+// ───────────── ejercicio ─────────────
+
+/** Solo lectura: los entrenamientos se cargan desde el chat con las capturas del Watch. Se oculta con visitas. */
+function WorkoutCards() {
+  const { model } = useData();
+  const kiosk = useKiosk();
+  if (kiosk.visitas || !model.workouts?.length) return null;
+  const ids = [...new Set(model.workouts.map((w) => w.person_id))];
+  return ids
+    .map((id) => model.peopleById.get(id))
+    .filter(Boolean)
+    .map((p) => <WorkoutCard key={p.id} person={p} />);
+}
+
+function WorkoutCard({ person }) {
+  const { model } = useData();
+  const { now } = useApp();
+  const cal = calTodayISO(new Date(now));
+  const monday = addDays(cal, -((dow(cal) + 6) % 7));
+  const list = model.workouts.filter((w) => w.person_id === person.id);
+  const last = list[list.length - 1];
+  const week = list.filter((w) => calDayOf(w.started_at) >= monday).length;
+  const min = Math.round((new Date(last.ended_at) - new Date(last.started_at)) / 60000);
+  const km = last.distance_km == null ? null : last.distance_km.toFixed(2).endsWith('0') ? fmt1(last.distance_km) : fmt2(last.distance_km);
+  const sub = [whenLabel(last.started_at, cal), last.hr_avg ? `${last.hr_avg} lpm` : null, last.effort ? `esfuerzo ${last.effort}/10` : null].filter(Boolean).join(' · ');
+  return (
+    <div className="kblock workout-card">
+      <header className="kblock-head">
+        <span className="kblock-title">
+          <Avatar person={person} size="sm" /> 🏃 Ejercicio
+        </span>
+        <span className="workout-week">{week === 0 ? 'Nada esta semana' : week === 1 ? '1 esta semana' : `${week} esta semana`}</span>
+      </header>
+      <div className="weight">
+        <span className="weight-val">
+          <strong>{fmtDuration(min)}</strong>
+          {km ? ` · ${km} km` : ''}
+        </span>
+        <span className="weight-sub">{sub}</span>
+      </div>
+    </div>
   );
 }
 

@@ -21,6 +21,7 @@ Ideas sueltas para Vestigia, con su costo, de qué dependen y qué quedó defini
 | 6 | [Estado de ánimo](#6--estado-de-ánimo) | Bajo a medio | Privacidad | — | 💡 |
 | 7 | [Ambientes: producción, testing y POC](#7--ambientes-producción-testing-y-poc) | Medio | Sí (base de producción) | — | 💡 |
 | 8 | ["¿Cuándo?" al anotar: tarritos, pastillas y tratamientos](#8--cuándo-al-anotar-tarritos-pastillas-y-tratamientos) | Bajo | No | — | ✅ |
+| 9 | [Ejercicio automático desde el Apple Watch](#9--ejercicio-automático-desde-el-apple-watch) | Medio a alto | Privacidad | Sincronizar dispositivos | 💡 |
 
 ## Orden sugerido
 
@@ -199,3 +200,16 @@ Costo bajo: no toca la base (la hora ya se guarda en todos los casos), solo los 
 **Abierto:**
 
 - [ ] Si "Otra hora…" permite también anotar en un día anterior (hoy eso solo se puede desde la base).
+
+## 9 · Ejercicio automático desde el Apple Watch
+
+Desde la v0.1.10 los entrenamientos se cargan desde el chat con las capturas de la app Fitness, y Vestigia solo los muestra (decidido el 21/10: la app no tiene botón para cargarlos).
+
+**Qué se suma:** que cada entrenamiento llegue solo al terminarlo en el Watch.
+
+Costo medio a alto: hace falta algo en el iPhone que lea Salud y mande los datos (Atajos no lee bien los entrenamientos con zonas de pulso; probablemente una app paga del estilo de "Health Auto Export") y una entrada segura en Supabase para recibirlos (una función con su propia clave, sin abrir la base).
+
+**Abierto:**
+
+- [ ] Si se hace junto con la sincronización de los otros dispositivos (ideas 4 y 5).
+- [ ] Si se suman también sueño y pasos por el mismo camino.
