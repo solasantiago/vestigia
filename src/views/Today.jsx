@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react';
 import { useApp } from '../lib/appctx.js';
 import { useData, useRun } from '../lib/data.jsx';
 import { useKiosk } from '../lib/kiosk.jsx';
-import { addDays, calDayOf, calTodayISO, dayMinutesOf, dow, fmtDayShort, fmtDuration, fmtTime, fmtWeekday } from '../lib/dates.js';
-import { fmt1, fmt2, fmtSigned } from '../lib/format.js';
+import { addDays, calDayOf, calTodayISO, dayMinutesOf, dow, fmtDayLong, fmtDayShort, fmtDuration, fmtTime, fmtWeekday } from '../lib/dates.js';
+import { fmt1, fmt2, fmtInt, fmtSigned } from '../lib/format.js';
 import { visibleEvents } from '../lib/metrics.js';
 import { computeDay, cycleState, CYCLE_PHASE, rulesOf } from '../lib/status.js';
 import { Avatar, Dialog } from '../components/ui.jsx';
@@ -39,8 +39,7 @@ function KioskToday() {
       </section>
       <section className="kcol kcol-agenda" aria-label="Agenda">
         <CycleCard />
-        <WeightCards />
-        <WorkoutCards />
+        <HealthCards />
         <AgendaPanel />
       </section>
     </div>
@@ -236,58 +235,6 @@ function whenLabel(ts, cal) {
   return fmtDayShort(d);
 }
 
-/** Una tarjeta por cada persona con al menos una pesada. Se oculta con visitas. */
-function WeightCards() {
-  const { model } = useData();
-  const kiosk = useKiosk();
-  if (kiosk.visitas || !model.weights?.length) return null;
-  const ids = [...new Set(model.weights.map((w) => w.person_id))];
-  return ids
-    .map((id) => model.peopleById.get(id))
-    .filter(Boolean)
-    .map((p) => <WeightCard key={p.id} person={p} />);
-}
-
-function WeightCard({ person }) {
-  const { model, actions } = useData();
-  const { now } = useApp();
-  const run = useRun();
-  const [open, setOpen] = useState(false);
-  const cal = calTodayISO(new Date(now));
-  const list = model.weights.filter((w) => w.person_id === person.id);
-  const last = list[list.length - 1];
-  const prev = list[list.length - 2];
-  const recent = last && Date.now() - new Date(last.created_at ?? 0).getTime() < 10 * 60 * 1000;
-  const diff = prev ? Math.round((last.kg - prev.kg) * 10) / 10 : null;
-  return (
-    <div className="kblock weight-card">
-      <header className="kblock-head">
-        <span className="kblock-title">
-          <Avatar person={person} size="sm" /> ⚖️ Peso
-        </span>
-        <button type="button" className="btn ghost xs" onClick={() => setOpen(true)}>
-          + Pesada
-        </button>
-      </header>
-      <div className="weight">
-        <span className="weight-val">
-          <strong>{fmt1(last.kg)}</strong> kg
-        </span>
-        <span className="weight-sub">
-          {whenLabel(last.measured_at, cal)}
-          {diff != null ? ` · ${fmtSigned(diff)} kg vs ${whenLabel(prev.measured_at, cal)}` : ''}
-        </span>
-        {recent ? (
-          <button type="button" className="link-btn" onClick={() => run(() => actions.undoWeight(last.id), 'Borrado')}>
-            deshacer
-          </button>
-        ) : null}
-      </div>
-      {open ? <WeightDialog person={person} list={list} cal={cal} onClose={() => setOpen(false)} /> : null}
-    </div>
-  );
-}
-
 function WeightDialog({ person, list, cal, onClose }) {
   const { actions } = useData();
   const run = useRun();
@@ -358,18 +305,6 @@ function WeightDialog({ person, list, cal, onClose }) {
 
 // ───────────── ejercicio ─────────────
 
-/** Solo lectura: los entrenamientos se cargan desde el chat con las capturas del Watch. Se oculta con visitas. */
-function WorkoutCards() {
-  const { model } = useData();
-  const kiosk = useKiosk();
-  if (kiosk.visitas || !model.workouts?.length) return null;
-  const ids = [...new Set(model.workouts.map((w) => w.person_id))];
-  return ids
-    .map((id) => model.peopleById.get(id))
-    .filter(Boolean)
-    .map((p) => <WorkoutCard key={p.id} person={p} />);
-}
-
 const ZONES = ['Zona 1', 'Zona 2', 'Zona 3', 'Zona 4', 'Zona 5'];
 const pad2 = (n) => String(n).padStart(2, '0');
 /** 3487 → "58:07"; 3725 → "1:02:05" */
@@ -407,41 +342,6 @@ function weekOf(list, cal) {
     sec: ws.reduce((a, w) => a + durSec(w), 0),
     km: ws.reduce((a, w) => a + (w.distance_km ?? 0), 0),
   };
-}
-
-function WorkoutCard({ person }) {
-  const { model } = useData();
-  const { now } = useApp();
-  const [open, setOpen] = useState(false);
-  const cal = calTodayISO(new Date(now));
-  const list = model.workouts.filter((w) => w.person_id === person.id);
-  const last = list[list.length - 1];
-  const wk = weekOf(list, cal);
-  const sub = [whenLabel(last.started_at, cal), last.hr_avg ? `${last.hr_avg} lpm` : null, last.effort ? `esfuerzo ${last.effort}/10` : null].filter(Boolean).join(' · ');
-  return (
-    <div className="kblock workout-card">
-      <header className="kblock-head">
-        <span className="kblock-title">
-          <Avatar person={person} size="sm" /> 🏃 Ejercicio
-        </span>
-        <button type="button" className="btn ghost xs" onClick={() => setOpen(true)}>
-          Ver detalle
-        </button>
-      </header>
-      <div className="weight">
-        <span className="weight-val">
-          <strong>{fmtDuration(durSec(last) / 60)}</strong>
-          {last.distance_km != null ? ` · ${fmtKm(last.distance_km)} km` : ''}
-        </span>
-        <span className="weight-sub">{sub}</span>
-      </div>
-      <ZoneBar zones={last.zones_sec} />
-      <span className="workout-week">
-        {wk.n === 0 ? 'Nada esta semana' : `Semana: ${wk.n} · ${fmtDuration(wk.sec / 60)}${wk.km ? ` · ${fmtKm(Math.round(wk.km * 100) / 100)} km` : ''}`}
-      </span>
-      {open ? <WorkoutDialog person={person} list={list} cal={cal} onClose={() => setOpen(false)} /> : null}
-    </div>
-  );
 }
 
 function WorkoutDialog({ person, list, cal, onClose }) {
@@ -593,6 +493,329 @@ function WorkoutDialog({ person, list, cal, onClose }) {
         </section>
       </div>
     </Dialog>
+  );
+}
+
+// ───────────── comidas ─────────────
+
+const MEAL_SLOT = { desayuno: 'Desayuno', almuerzo: 'Almuerzo', merienda: 'Merienda', cena: 'Cena', colacion: 'Colación' };
+// Referencia general ("5 al día"): 3 de verdura y 2 de fruta. Sin meta de calorías.
+const VEG_GOAL = 3;
+const FRUIT_GOAL = 2;
+
+function dayTotals(meals) {
+  const sum = (k) => meals.reduce((a, m) => a + (Number(m[k]) || 0), 0);
+  const has = (k) => meals.some((m) => m[k] != null);
+  return {
+    n: meals.length,
+    kcal: has('kcal') ? sum('kcal') : null,
+    protein: has('protein_g') ? sum('protein_g') : null,
+    carbs: has('carbs_g') ? sum('carbs_g') : null,
+    fat: has('fat_g') ? sum('fat_g') : null,
+    veg: sum('veg_servings'),
+    fruit: sum('fruit_servings'),
+    ultra: meals.filter((m) => m.ultra).length,
+  };
+}
+const fmtServ = (v) => (Number.isInteger(v) ? String(v) : fmt1(v));
+
+function MealDialog({ person, list, onClose }) {
+  const { today } = useApp();
+  const days = [...new Set(list.map((m) => m.day))].sort().reverse();
+  const [day, setDay] = useState(days.includes(today) ? today : days[0]);
+  const meals = list.filter((m) => m.day === day);
+  const t = dayTotals(meals);
+  const label = (d) => (d === today ? 'Hoy' : d === addDays(today, -1) ? 'Ayer' : `${fmtWeekday(d, 'short')} ${Number(d.slice(8))}/${Number(d.slice(5, 7))}`);
+  const stats = [
+    ['Calorías', t.kcal != null ? `≈ ${fmtInt(t.kcal)}` : '—'],
+    ['Proteína', t.protein != null ? `${fmtInt(t.protein)} g` : '—'],
+    ['Carbohidratos', t.carbs != null ? `${fmtInt(t.carbs)} g` : '—'],
+    ['Grasas', t.fat != null ? `${fmtInt(t.fat)} g` : '—'],
+    ['Verdura', `${fmtServ(t.veg)} de ${VEG_GOAL}`],
+    ['Fruta', `${fmtServ(t.fruit)} de ${FRUIT_GOAL}`],
+  ];
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      title={`🍽️ Comidas de ${person.short_name}`}
+      footer={
+        <button type="button" className="btn primary" onClick={onClose}>
+          Listo
+        </button>
+      }
+    >
+      <div className="wo">
+        <div className="wo-head">
+          <strong>{day === today ? 'Hoy' : day === addDays(today, -1) ? 'Ayer' : fmtDayLongCap(day)}</strong>
+          <span>
+            {t.n === 1 ? '1 comida' : `${t.n} comidas`}
+            {t.ultra ? ` · ${t.ultra} con ultraprocesados` : ''}
+          </span>
+        </div>
+        <dl className="wo-stats">
+          {stats.map(([k, v]) => (
+            <div key={k}>
+              <dt>{k}</dt>
+              <dd>{v}</dd>
+            </div>
+          ))}
+        </dl>
+
+        <section className="wo-sec">
+          <h4>Lo que comiste</h4>
+          {meals.length ? (
+            <ul className="meal-list">
+              {meals.map((m) => (
+                <li key={m.id}>
+                  <div className="meal-row">
+                    <span className="meal-when">
+                      {MEAL_SLOT[m.slot]} · {fmtTime(m.eaten_at)}
+                    </span>
+                    <span className="meal-kcal">{m.kcal != null ? `≈ ${fmtInt(m.kcal)} kcal` : ''}</span>
+                  </div>
+                  <strong className="meal-desc">
+                    {m.description}
+                    {m.ultra ? <span className="meal-chip warn sm">ultraprocesado</span> : null}
+                  </strong>
+                  {Array.isArray(m.items) && m.items.length ? (
+                    <ul className="meal-items">
+                      {m.items.map((it, i) => (
+                        <li key={i}>
+                          <span>
+                            {it.name}
+                            {it.portion ? <span className="muted"> · {it.portion}</span> : null}
+                          </span>
+                          <span className="num">
+                            {it.kcal != null ? `${fmtInt(it.kcal)} kcal` : ''}
+                            {it.protein_g != null ? ` · ${fmtInt(it.protein_g)} g prot.` : ''}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {m.note ? <p className="muted small">{m.note}</p> : null}
+                  {m.tip ? <p className="meal-tip">💡 {m.tip}</p> : null}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="muted">Nada cargado este día.</p>
+          )}
+        </section>
+
+        <section className="wo-sec">
+          <h4>Historial</h4>
+          <table className="wo-table wo-hist">
+            <thead>
+              <tr>
+                <th>Día</th>
+                <th>Comidas</th>
+                <th>kcal</th>
+                <th>Prot.</th>
+                <th>Verd.</th>
+                <th>Fruta</th>
+              </tr>
+            </thead>
+            <tbody>
+              {days.slice(0, 14).map((d) => {
+                const x = dayTotals(list.filter((m) => m.day === d));
+                return (
+                  <tr key={d} className={d === day ? 'sel' : ''} onClick={() => setDay(d)}>
+                    <td>
+                      <button type="button" className="link-btn" aria-pressed={d === day} onClick={() => setDay(d)}>
+                        {label(d)}
+                      </button>
+                    </td>
+                    <td>{x.n}</td>
+                    <td>{x.kcal != null ? fmtInt(x.kcal) : '—'}</td>
+                    <td>{x.protein != null ? `${fmtInt(x.protein)} g` : '—'}</td>
+                    <td>{fmtServ(x.veg)}</td>
+                    <td>{fmtServ(x.fruit)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <p className="muted small">Estimado por foto: puede errar un 20–30 %. Sirve para ver el equilibrio y la tendencia, no el número exacto.</p>
+        </section>
+      </div>
+    </Dialog>
+  );
+}
+
+const fmtDayLongCap = (d) => {
+  const s = fmtDayLong(d);
+  return s.charAt(0).toUpperCase() + s.slice(1);
+};
+
+// ───────────── salud: peso, ejercicio y comidas en una tarjeta ─────────────
+
+/** Una tarjeta por persona con peso, ejercicio o comidas cargados. Se oculta con visitas. */
+function HealthCards() {
+  const { model } = useData();
+  const kiosk = useKiosk();
+  if (kiosk.visitas) return null;
+  const ids = [...new Set([...(model.weights ?? []), ...(model.workouts ?? []), ...(model.meals ?? [])].map((x) => x.person_id))];
+  return model.people.filter((p) => ids.includes(p.id)).map((p) => <HealthCard key={p.id} person={p} />);
+}
+
+function HealthCard({ person }) {
+  const { model } = useData();
+  const { now, today } = useApp();
+  const [dlg, setDlg] = useState(null);
+  const cal = calTodayISO(new Date(now));
+  const weights = model.weights.filter((w) => w.person_id === person.id);
+  const workouts = model.workouts.filter((w) => w.person_id === person.id);
+  const meals = model.meals.filter((m) => m.person_id === person.id);
+  return (
+    <div className="kblock health-card">
+      <header className="kblock-head">
+        <span className="kblock-title">
+          <Avatar person={person} size="sm" /> Salud de {person.short_name}
+        </span>
+      </header>
+      {weights.length ? <WeightRow list={weights} cal={cal} onOpen={() => setDlg('peso')} /> : null}
+      {workouts.length ? <WorkoutRow list={workouts} cal={cal} onOpen={() => setDlg('ejercicio')} /> : null}
+      {meals.length ? <MealRow list={meals} today={today} onOpen={() => setDlg('comidas')} /> : null}
+      {dlg === 'peso' ? <WeightDialog person={person} list={weights} cal={cal} onClose={() => setDlg(null)} /> : null}
+      {dlg === 'ejercicio' ? <WorkoutDialog person={person} list={workouts} cal={cal} onClose={() => setDlg(null)} /> : null}
+      {dlg === 'comidas' ? <MealDialog person={person} list={meals} onClose={() => setDlg(null)} /> : null}
+    </div>
+  );
+}
+
+function HRow({ icon, main, sub, extra, action }) {
+  return (
+    <div className="hrow">
+      <span className="hrow-icon" aria-hidden="true">
+        {icon}
+      </span>
+      <div className="hrow-text">
+        <div className="hrow-top">
+          <span className="hrow-main">{main}</span>
+          {action}
+        </div>
+        {sub ? <span className="hrow-sub">{sub}</span> : null}
+        {extra}
+      </div>
+    </div>
+  );
+}
+
+function WeightRow({ list, cal, onOpen }) {
+  const { actions } = useData();
+  const run = useRun();
+  const last = list[list.length - 1];
+  const prev = list[list.length - 2];
+  const recent = Date.now() - new Date(last.created_at ?? 0).getTime() < 10 * 60 * 1000;
+  const diff = prev ? Math.round((last.kg - prev.kg) * 10) / 10 : null;
+  return (
+    <HRow
+      icon="⚖️"
+      main={
+        <>
+          <strong>{fmt1(last.kg)}</strong> kg
+        </>
+      }
+      sub={
+        <>
+          {whenLabel(last.measured_at, cal)}
+          {diff != null ? ` · ${fmtSigned(diff)} kg vs ${whenLabel(prev.measured_at, cal)}` : ''}
+          {recent ? (
+            <>
+              {' · '}
+              <button type="button" className="link-btn" onClick={() => run(() => actions.undoWeight(last.id), 'Borrado')}>
+                deshacer
+              </button>
+            </>
+          ) : null}
+        </>
+      }
+      action={
+        <button type="button" className="btn ghost xs" onClick={onOpen}>
+          + Pesada
+        </button>
+      }
+    />
+  );
+}
+
+function WorkoutRow({ list, cal, onOpen }) {
+  const last = list[list.length - 1];
+  const wk = weekOf(list, cal);
+  const sub = [whenLabel(last.started_at, cal), last.hr_avg ? `${last.hr_avg} lpm` : null, last.effort ? `esf. ${last.effort}/10` : null, `semana: ${wk.n}`].filter(Boolean).join(' · ');
+  return (
+    <HRow
+      icon="🏃"
+      main={
+        <>
+          <strong>{fmtDuration(durSec(last) / 60)}</strong>
+          {last.distance_km != null ? ` · ${fmtKm(last.distance_km)} km` : ''}
+        </>
+      }
+      sub={sub}
+      extra={<ZoneBar zones={last.zones_sec} />}
+      action={
+        <button type="button" className="btn ghost xs" onClick={onOpen}>
+          Ver
+        </button>
+      }
+    />
+  );
+}
+
+function MealRow({ list, today, onOpen }) {
+  const mine = list.filter((m) => m.day === today);
+  const t = dayTotals(mine);
+  const last = mine[mine.length - 1];
+  const prevDay = [...new Set(list.map((m) => m.day))].filter((d) => d < today).pop();
+  const prevT = prevDay ? dayTotals(list.filter((m) => m.day === prevDay)) : null;
+  const bal = (
+    <span className="hrow-sub">
+      <span className={t.veg >= VEG_GOAL ? 'ok' : ''}>
+        verdura {fmtServ(t.veg)}/{VEG_GOAL}
+      </span>
+      {' · '}
+      <span className={t.fruit >= FRUIT_GOAL ? 'ok' : ''}>
+        fruta {fmtServ(t.fruit)}/{FRUIT_GOAL}
+      </span>
+      {t.protein != null ? ` · prot.\u00a0${fmtInt(t.protein)}\u00a0g` : ''}
+      {t.ultra ? <span className="warn"> · ultraproc. {t.ultra}</span> : null}
+    </span>
+  );
+  return (
+    <HRow
+      icon="🍽️"
+      main={
+        mine.length ? (
+          <>
+            {t.kcal != null ? (
+              <>
+                <strong>≈ {fmtInt(t.kcal)}</strong> kcal ·{' '}
+              </>
+            ) : null}
+            {t.n === 1 ? '1 comida' : `${t.n} comidas`}
+          </>
+        ) : (
+          <span className="muted">Nada cargado hoy</span>
+        )
+      }
+      sub={mine.length ? null : prevT?.kcal != null ? `${prevDay === addDays(today, -1) ? 'ayer' : fmtDayShort(prevDay)} ≈ ${fmtInt(prevT.kcal)} kcal` : null}
+      extra={
+        mine.length ? (
+          <>
+            {bal}
+            {last.tip ? <span className="hrow-tip">💡 {last.tip}</span> : null}
+          </>
+        ) : null
+      }
+      action={
+        <button type="button" className="btn ghost xs" onClick={onOpen}>
+          Ver
+        </button>
+      }
+    />
   );
 }
 

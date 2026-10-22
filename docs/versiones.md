@@ -91,6 +91,12 @@ Las ideas sueltas, con su costo y lo que ya se definió, están en [Ideas pendie
 - Se quita el **registro de la casa** (no se usaba): la pestaña pasa a llamarse **Agenda**. Lo anotado sigue guardado en la base.
 - En las opciones, **"Actualizar la app"** recarga la versión más nueva sin tener que cerrar la app.
 
+## v0.1.13 — Comidas y tarjeta de salud ✅ (22/10/2026)
+
+- **Comidas:** se cargan desde el chat con fotos (no se guardan las fotos) y la app solo las muestra. Cada comida queda con hora, qué fue, porciones, calorías, proteína, carbohidratos y grasas estimados, porciones de verdura y fruta, si es ultraprocesada y una sugerencia para la próxima. Las cantidades son estimaciones por foto (±20–30 %).
+- **Tarjeta "Salud de …"** en la columna de la agenda: junta peso, ejercicio y comidas en una sola tarjeta para que la agenda siga entrando en el iPad. Comidas muestra las calorías del día, verdura y fruta (referencia 3 y 2 por día), proteína y la última sugerencia; "Ver" abre cada comida con sus porciones y el historial por día.
+- Sin semáforo ni avisos; se oculta en modo visitas. Los valores viven solo en la base.
+
 ## v0.2 — Cada uno en su celular (propuesta)
 
 - Cuentas de Mica y de Santi, con la privacidad de la §7 del documento funcional.

@@ -173,6 +173,18 @@ export function buildModel(db) {
     workouts: [...(db.workouts ?? [])]
       .map((w) => ({ ...w, distance_km: w.distance_km == null ? null : Number(w.distance_km) }))
       .sort((a, b) => new Date(a.started_at) - new Date(b.started_at) || a.id - b.id),
+    // Comidas cargadas desde el chat (estimadas por foto), por hora; day = día de la casa.
+    meals: [...(db.meals ?? [])]
+      .map((m) => ({
+        ...m,
+        day: dayOf(m.eaten_at),
+        protein_g: m.protein_g == null ? null : Number(m.protein_g),
+        carbs_g: m.carbs_g == null ? null : Number(m.carbs_g),
+        fat_g: m.fat_g == null ? null : Number(m.fat_g),
+        veg_servings: Number(m.veg_servings ?? 0),
+        fruit_servings: Number(m.fruit_servings ?? 0),
+      }))
+      .sort((a, b) => new Date(a.eaten_at) - new Date(b.eaten_at) || a.id - b.id),
     meds: [...(db.dog_meds ?? [])].sort((a, b) => new Date(a.due_at) - new Date(b.due_at) || a.id - b.id),
     events: [...db.events].sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at)),
     logsByChore,

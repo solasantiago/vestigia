@@ -4538,3 +4538,166 @@ select {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* v0.1.13 · comidas (solo lectura) */
+.meal-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+}
+.meal-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.meal-chip.ok {
+  border-color: color-mix(in oklab, var(--st-ok) 45%, transparent);
+  color: var(--st-ok-text);
+}
+.meal-chip.warn {
+  border-color: color-mix(in oklab, var(--st-warn) 45%, transparent);
+  color: var(--st-warn-text);
+}
+.meal-chip.sm {
+  margin-left: 8px;
+  font-size: 11px;
+  vertical-align: 2px;
+}
+.meal-tip {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.meal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.meal-list > li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.meal-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.meal-when,
+.meal-kcal {
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.meal-kcal {
+  font-variant-numeric: tabular-nums;
+}
+.meal-desc {
+  font-size: 15px;
+}
+.meal-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0 0 0 10px;
+  border-left: 2px solid var(--border);
+  list-style: none;
+}
+.meal-items li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13.5px;
+}
+.meal-items .num {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* v0.1.13 · tarjeta de salud: peso, ejercicio y comidas */
+.health-card {
+  gap: 6px;
+}
+.hrow {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  padding: 7px 0 0;
+  border-top: 1px dashed var(--border-strong);
+}
+.health-card .kblock-head + .hrow {
+  border-top: 0;
+  padding-top: 0;
+}
+.hrow-icon {
+  font-size: 17px;
+  line-height: 1.4;
+}
+.hrow-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.hrow-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.hrow-top .btn.xs {
+  flex: none;
+  padding-block: 3px;
+}
+.hrow-main {
+  color: var(--text-2);
+  font-size: 14px;
+  font-weight: 700;
+}
+.hrow-main strong {
+  color: var(--text);
+  font-size: 19px;
+  font-variant-numeric: tabular-nums;
+}
+.hrow-sub {
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.hrow-sub .ok {
+  color: var(--st-ok-text);
+}
+.hrow-sub .warn {
+  color: var(--st-warn-text);
+}
+.hrow-tip {
+  color: var(--text-2);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.hrow .zone-bar {
+  margin-top: 2px;
+}
+.app.phone .hrow-tip {
+  -webkit-line-clamp: unset;
+  display: block;
+}
