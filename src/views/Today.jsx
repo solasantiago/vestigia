@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useApp } from '../lib/appctx.js';
 import { useData, useRun } from '../lib/data.jsx';
 import { useKiosk } from '../lib/kiosk.jsx';
-import { addDays, calDayOf, calTodayISO, dayMinutesOf, dow, fmtDayLong, range, fmtDayShort, fmtDuration, fmtTime, fmtWeekday } from '../lib/dates.js';
+import { addDays, calDayOf, calTodayISO, dayMinutesOf, dow, fmtDayLong, fmtDayShort, fmtDuration, fmtMonth, fmtTime, fmtWeekday, range } from '../lib/dates.js';
 import { fmt1, fmt2, fmtInt, fmtSigned } from '../lib/format.js';
 import { visibleEvents } from '../lib/metrics.js';
 import { computeDay, cycleState, CYCLE_PHASE, rulesOf } from '../lib/status.js';
@@ -235,7 +235,66 @@ function whenLabel(ts, cal) {
   return fmtDayShort(d);
 }
 
-function WeightDialog({ person, list, cal, onClose }) {
+/**
+ * Tendencia del peso: promedio de los últimos 7 días, ritmo (kg por semana, recta de los
+ * últimos 28 días, con al menos 3 pesadas en 10 días o más) y fecha estimada para el objetivo.
+ */
+function weightTrend(list, cal, target) {
+  if (!list.length) return null;
+  const dayN = (ts) => Date.parse(`${calDayOf(ts)}T12:00:00Z`) / 86400000;
+  const nowN = Date.parse(`${cal}T12:00:00Z`) / 86400000;
+  const last7 = list.filter((w) => nowN - dayN(w.measured_at) < 7);
+  const avg7 = last7.length ? last7.reduce((a, w) => a + w.kg, 0) / last7.length : null;
+  const win = list.filter((w) => nowN - dayN(w.measured_at) < 28);
+  let rate = null;
+  if (win.length >= 3) {
+    const xs = win.map((w) => dayN(w.measured_at));
+    const span = Math.max(...xs) - Math.min(...xs);
+    if (span >= 10) {
+      const mx = xs.reduce((a, b) => a + b, 0) / xs.length;
+      const my = win.reduce((a, w) => a + w.kg, 0) / win.length;
+      const num = xs.reduce((a, x, i) => a + (x - mx) * (win[i].kg - my), 0);
+      const den = xs.reduce((a, x) => a + (x - mx) ** 2, 0);
+      if (den > 0) rate = (num / den) * 7;
+    }
+  }
+  const cur = avg7 ?? list[list.length - 1].kg;
+  const left = target != null ? Math.round((cur - target) * 10) / 10 : null;
+  let eta = null;
+  if (left != null && left > 0 && rate != null && rate < -0.05) {
+    eta = addDays(cal, Math.round((left / -rate) * 7));
+  }
+  return { avg7, rate, left, eta, start: list[0] };
+}
+const fmtMonthShort = (iso) => fmtMonth(iso).replace(/ de /, ' ');
+
+function GoalProgress({ list, cal, goal }) {
+  const tr = weightTrend(list, cal, goal.target_kg);
+  const from = tr.start.kg;
+  const cur = tr.avg7 ?? list[list.length - 1].kg;
+  const done = from > goal.target_kg ? Math.max(0, Math.min(1, (from - cur) / (from - goal.target_kg))) : 0;
+  return (
+    <div className="goal">
+      <div className="goal-top">
+        <strong>Objetivo {fmt1(goal.target_kg)} kg</strong>
+        <span>{tr.left > 0 ? `faltan ${fmt1(tr.left)} kg` : 'llegaste 🎉'}</span>
+      </div>
+      <div className="goal-track" aria-hidden="true">
+        <span style={{ width: `${done * 100}%` }} />
+      </div>
+      <p className="goal-text">
+        Desde {fmt1(from)} kg ({fmtDayShort(calDayOf(tr.start.measured_at))}).{' '}
+        {tr.avg7 != null ? `Promedio de los últimos 7 días: ${fmt1(tr.avg7)} kg. ` : ''}
+        {tr.rate != null
+          ? `Ritmo: ${fmtSigned(tr.rate)} kg por semana${tr.eta ? `; a este ritmo llegarías hacia ${fmtMonthShort(tr.eta)}` : ''}.`
+          : 'El ritmo y la fecha estimada aparecen con unas 2 semanas de pesadas.'}
+        {goal.kcal_lo && goal.kcal_hi ? ` Calorías para bajar: ${fmtInt(goal.kcal_lo)}–${fmtInt(goal.kcal_hi)} por día.` : ''}
+      </p>
+    </div>
+  );
+}
+
+function WeightDialog({ person, list, cal, onClose, goal }) {
   const { actions } = useData();
   const run = useRun();
   const last = list[list.length - 1];
@@ -299,6 +358,7 @@ function WeightDialog({ person, list, cal, onClose }) {
             ))}
         </ul>
       ) : null}
+      {goal?.target_kg && list.length ? <GoalProgress list={list} cal={cal} goal={goal} /> : null}
     </Dialog>
   );
 }
@@ -523,21 +583,28 @@ const fmtServ = (v) => (Number.isInteger(v) ? String(v) : fmt1(v));
 // Proteína 1,2–1,6 g por kg de peso (para quien entrena); verdura 3 y fruta 2 porciones;
 // ultraprocesados como mucho 1 por día; grasas 20–35 % y carbohidratos 45–65 % de las calorías.
 const CRIT = [
+  { k: 'kcal', short: 'kcal', label: 'Calorías', noun: 'calorías', the: 'las calorías', f: true, pl: true },
   { k: 'protein', label: 'Proteína', short: 'Prot.', noun: 'proteína', the: 'la proteína', f: true },
   { k: 'veg', label: 'Verdura', short: 'Verdura', noun: 'verdura', the: 'la verdura', f: true },
   { k: 'fruit', label: 'Fruta', short: 'Fruta', noun: 'fruta', the: 'la fruta', f: true },
-  { k: 'ultra', label: 'Ultraproc.', short: 'Ultrapr.', noun: 'ultraprocesados', the: 'los ultraprocesados' },
-  { k: 'fatPct', label: 'Grasas', short: 'Grasas', noun: 'grasas', the: 'las grasas', f: true },
-  { k: 'carbPct', label: 'Carbohidratos', short: 'Carbos', noun: 'carbohidratos', the: 'los carbohidratos' },
+  { k: 'ultra', label: 'Ultraproc.', short: 'Ultrapr.', noun: 'ultraprocesados', the: 'los ultraprocesados', pl: true },
+  { k: 'fatPct', label: 'Grasas', short: 'Grasas', noun: 'grasas', the: 'las grasas', f: true, pl: true },
+  { k: 'carbPct', label: 'Carbohidratos', short: 'Carbos', noun: 'carbohidratos', the: 'los carbohidratos', pl: true },
 ];
 
-function evalDay(t, kg, partial) {
+function evalDay(t, kg, partial, goal) {
   const r = {};
   const below = (v, lo) => (v >= lo ? 'ok' : partial ? 'pending' : 'low');
   if (t.n === 0) {
     for (const c of CRIT) r[c.k] = { status: 'none' };
     return r;
   }
+  if (goal?.kcal_lo && goal?.kcal_hi && t.kcal != null) {
+    const floor = goal.kcal_floor ?? goal.kcal_lo;
+    const v = t.kcal;
+    r.kcal = { value: v, lo: goal.kcal_lo, hi: goal.kcal_hi, status: v > goal.kcal_hi ? 'high' : partial ? (v < goal.kcal_lo ? 'pending' : 'ok') : v < floor && t.n >= 3 ? 'low' : 'ok' };
+    // "Muy bajo" solo con 3 comidas o más cargadas: con menos, lo más probable es que falte cargar algo.
+  } else r.kcal = { status: 'na' };
   const pLo = kg ? Math.round(kg * 1.2) : null;
   const pHi = kg ? Math.round(kg * 1.6) : null;
   r.protein = t.protein == null ? { status: 'na' } : { value: t.protein, lo: pLo, hi: pHi, status: pLo ? below(t.protein, pLo) : 'na' };
@@ -566,7 +633,7 @@ function joinEs(xs) {
 }
 
 /** Dos o tres oraciones con lo que dicen los datos: el día y la semana. */
-function mealStory({ ev, day, today, week }) {
+function mealStory({ ev, day, today, week, goal }) {
   const MAIN = ['protein', 'veg', 'fruit'];
   const of = (st, keys = CRIT.map((c) => c.k)) => CRIT.filter((c) => keys.includes(c.k) && ev[c.k]?.status === st);
   const isToday = day === today;
@@ -577,19 +644,27 @@ function mealStory({ ev, day, today, week }) {
   } else {
     const good = of('ok', MAIN).map((c) => c.noun);
     if (ev.ultra?.status === 'ok' && ev.ultra.value === 0) good.push('sin ultraprocesados');
+    if (!isToday && ev.kcal?.status === 'ok') good.push('dentro de las calorías');
     const high = of('high').map((c) => c.the);
     const low = of('low').map((c) => c.noun);
     const pending = of('pending').map((c) => c.noun);
     const bits = [];
     if (good.length) {
-      const g = good.filter((x) => !x.startsWith('sin '));
+      const g = good.filter((x) => !x.startsWith('sin ') && !x.startsWith('dentro '));
       const sin = good.find((x) => x.startsWith('sin '));
-      bits.push(g.length ? `${isToday ? 'venís' : 'estuviste'} bien de ${joinEs(g)}${sin ? `, ${sin}` : ''}` : `${isToday ? 'venís' : 'estuviste'} ${sin}`);
+      // (las calorías en rango se suman al final)
+      const extras = good.filter((x) => x.startsWith('dentro '));
+      const tail = [sin, ...extras].filter(Boolean).join(', ');
+      bits.push(g.length ? `${isToday ? 'venís' : 'estuviste'} bien de ${joinEs(g)}${tail ? `, ${tail}` : ''}` : `${isToday ? 'venís' : 'estuviste'} ${tail}`);
     }
     if (high.length) bits.push(`${isToday ? 'se están yendo arriba' : 'se fueron arriba'} ${joinEs(high)}`);
     if (low.length) bits.push(`quedaste corto de ${joinEs(low)}`);
     let txt = bits.length ? `${when} ${bits.join('; ')}.` : isToday ? 'Hoy recién arranca.' : `${when} quedó a mitad de camino.`;
-    if (pending.length) txt += ` Todavía ${pending.length > 1 ? 'faltan' : 'falta'} ${joinEs(pending)}.`;
+    const pend = pending.filter((n) => n !== 'calorías');
+    if (pend.length) txt += ` Todavía ${pend.length > 1 ? 'faltan' : 'falta'} ${joinEs(pend)}.`;
+    if (isToday && ev.kcal?.value != null && goal?.kcal_hi && ev.kcal.value <= goal.kcal_hi) {
+      txt += ` Te quedan ≈ ${fmtInt(goal.kcal_hi - ev.kcal.value)} kcal hasta el tope de ${fmtInt(goal.kcal_hi)}.`;
+    }
     out.push(txt);
   }
   const counted = week.filter((w) => !w.partial && w.n > 0);
@@ -604,8 +679,9 @@ function mealStory({ ev, day, today, week }) {
     const top = miss[0];
     if (top.n === 0) out.push(`En los últimos días el balance viene parejo: los ${counted.length} días con datos quedaron en rango.`);
     else {
-      const how = top.high > top.low ? (top.c.f ? 'se pasó' : 'se pasaron') : top.c.f ? 'quedó corta' : 'quedaron cortos';
-      out.push(`En la semana, lo que más se desvía es ${top.c.the}: ${how} ${top.n} de ${counted.length} días con datos.`);
+      const c = top.c;
+      const how = top.high > top.low ? (c.pl ? 'se pasaron' : 'se pasó') : `${c.pl ? 'quedaron' : 'quedó'} ${c.f ? 'corta' : 'corto'}${c.pl ? 's' : ''}`;
+      out.push(`En la semana, lo que más se desvía ${c.pl ? 'son' : 'es'} ${c.the}: ${how} ${top.n} de ${counted.length} días con datos.`);
       const steady = miss.filter((m) => m.n === 0 && MAIN.includes(m.c.k)).map((m) => m.c.noun);
       if (steady.length) out.push(`${steady.length > 1 ? 'Vienen firmes' : 'Viene firme'}: ${joinEs(steady)}.`);
     }
@@ -643,7 +719,7 @@ function BalanceBar({ label, item, unit, fmt, max }) {
   );
 }
 
-function MealDialog({ person, list, onClose }) {
+function MealDialog({ person, list, onClose, goal }) {
   const { today } = useApp();
   const days = [...new Set(list.map((m) => m.day))].sort().reverse();
   const [day, setDay] = useState(days.includes(today) ? today : days[0]);
@@ -652,12 +728,12 @@ function MealDialog({ person, list, onClose }) {
   const { model } = useData();
   const kgList = model.weights.filter((w) => w.person_id === person.id);
   const kg = kgList.length ? kgList[kgList.length - 1].kg : null;
-  const ev = evalDay(t, kg, day === today);
+  const ev = evalDay(t, kg, day === today, goal);
   const week = range(addDays(today, -6), today).map((d) => {
     const ms = list.filter((m) => m.day === d);
-    return { d, partial: d === today, ev: evalDay(dayTotals(ms), kg, d === today), n: ms.length };
+    return { d, partial: d === today, ev: evalDay(dayTotals(ms), kg, d === today, goal), n: ms.length };
   });
-  const story = mealStory({ ev, day, today, week });
+  const story = mealStory({ ev, day, today, week, goal });
   const label = (d) => (d === today ? 'Hoy' : d === addDays(today, -1) ? 'Ayer' : `${fmtWeekday(d, 'short')} ${Number(d.slice(8))}/${Number(d.slice(5, 7))}`);
   const stats = [
     ['Calorías', t.kcal != null ? `≈ ${fmtInt(t.kcal)}` : '—'],
@@ -691,6 +767,7 @@ function MealDialog({ person, list, onClose }) {
         <section className="wo-sec">
           <h4>Balance {day === today ? 'de hoy (hasta ahora)' : 'del día'}</h4>
           <div className="bals">
+            <BalanceBar label="Calorías" item={ev.kcal} unit=" kcal" fmt={fmtInt} max={goal?.kcal_hi ? goal.kcal_hi * 1.4 : 3000} />
             <BalanceBar label="Proteína" item={ev.protein} unit=" g" fmt={fmtInt} max={kg ? kg * 1.9 : 150} />
             <BalanceBar label="Verdura" item={ev.veg} unit=" porc." fmt={fmtServ} max={5} />
             <BalanceBar label="Fruta" item={ev.fruit} unit=" porc." fmt={fmtServ} max={4} />
@@ -854,6 +931,7 @@ function HealthCard({ person }) {
   const workouts = model.workouts.filter((w) => w.person_id === person.id);
   const meals = model.meals.filter((m) => m.person_id === person.id);
   const measures = (model.measures ?? []).filter((m) => m.person_id === person.id);
+  const goal = model.goals?.get(person.id) ?? null;
   return (
     <div className="kblock health-card">
       <header className="kblock-head">
@@ -861,14 +939,14 @@ function HealthCard({ person }) {
           <Avatar person={person} size="sm" /> Salud de {person.short_name}
         </span>
       </header>
-      {weights.length ? <WeightRow list={weights} cal={cal} onOpen={() => setDlg('peso')} /> : null}
+      {weights.length ? <WeightRow list={weights} cal={cal} goal={goal} onOpen={() => setDlg('peso')} /> : null}
       {measures.length ? <MeasureRow list={measures} cal={cal} onOpen={() => setDlg('medidas')} /> : null}
       {workouts.length ? <WorkoutRow list={workouts} cal={cal} onOpen={() => setDlg('ejercicio')} /> : null}
-      {meals.length ? <MealRow list={meals} today={today} onOpen={() => setDlg('comidas')} /> : null}
-      {dlg === 'peso' ? <WeightDialog person={person} list={weights} cal={cal} onClose={() => setDlg(null)} /> : null}
-      {dlg === 'medidas' ? <MeasureDialog person={person} list={measures} cal={cal} onClose={() => setDlg(null)} /> : null}
+      {meals.length ? <MealRow list={meals} today={today} goal={goal} onOpen={() => setDlg('comidas')} /> : null}
+      {dlg === 'peso' ? <WeightDialog person={person} list={weights} cal={cal} goal={goal} onClose={() => setDlg(null)} /> : null}
+      {dlg === 'medidas' ? <MeasureDialog person={person} list={measures} cal={cal} goal={goal} onClose={() => setDlg(null)} /> : null}
       {dlg === 'ejercicio' ? <WorkoutDialog person={person} list={workouts} cal={cal} onClose={() => setDlg(null)} /> : null}
-      {dlg === 'comidas' ? <MealDialog person={person} list={meals} onClose={() => setDlg(null)} /> : null}
+      {dlg === 'comidas' ? <MealDialog person={person} list={meals} goal={goal} onClose={() => setDlg(null)} /> : null}
     </div>
   );
 }
@@ -891,7 +969,7 @@ function HRow({ icon, main, sub, extra, action }) {
   );
 }
 
-function WeightRow({ list, cal, onOpen }) {
+function WeightRow({ list, cal, onOpen, goal }) {
   const { actions } = useData();
   const run = useRun();
   const last = list[list.length - 1];
@@ -909,7 +987,7 @@ function WeightRow({ list, cal, onOpen }) {
       sub={
         <>
           {whenLabel(last.measured_at, cal)}
-          {diff != null ? ` · ${fmtSigned(diff)} kg vs ${whenLabel(prev.measured_at, cal)}` : ''}
+          {diff != null ? ` · ${fmtSigned(diff)} kg${goal?.target_kg ? '' : ` vs ${whenLabel(prev.measured_at, cal)}`}` : ''}
           {recent ? (
             <>
               {' · '}
@@ -919,6 +997,17 @@ function WeightRow({ list, cal, onOpen }) {
             </>
           ) : null}
         </>
+      }
+      extra={
+        goal?.target_kg
+          ? (() => {
+              const tr = weightTrend(list, cal, goal.target_kg);
+              const bits = [tr.left > 0 ? `${fmt1(goal.target_kg)}: faltan ${fmt1(tr.left)} kg` : `objetivo ${fmt1(goal.target_kg)} kg cumplido 🎉`];
+              if (tr.rate != null) bits.push(`${fmtSigned(tr.rate)} kg/sem`);
+              if (tr.eta) bits.push(`≈ ${fmtMonthShort(tr.eta)}`);
+              return <span className="hrow-sub hrow-goal">🎯 {bits.join(' · ')}</span>;
+            })()
+          : null
       }
       action={
         <button type="button" className="btn ghost xs" onClick={onOpen}>
@@ -946,7 +1035,7 @@ function MeasureRow({ list, cal, onOpen }) {
   const [mk, mLabel] = keys[0] ?? MEASURES[0];
   const prev = prevWith(list, i, mk);
   const diff = prev ? Math.round((last[mk] - prev[mk]) * 10) / 10 : null;
-  const others = keys.slice(1, 3).map(([k, l]) => `${l.toLowerCase()} ${fmt1(last[k])}`);
+  const others = keys.slice(1, 2).map(([k, l]) => `${l.toLowerCase()} ${fmt1(last[k])}`);
   return (
     <HRow
       icon="📏"
@@ -965,7 +1054,7 @@ function MeasureRow({ list, cal, onOpen }) {
   );
 }
 
-function MeasureDialog({ person, list, cal, onClose }) {
+function MeasureDialog({ person, list, cal, onClose, goal }) {
   const keys = MEASURES.filter(([k]) => list.some((m) => m[k] != null));
   const first = (k) => list.find((m) => m[k] != null);
   const lastOf = (k) => [...list].reverse().find((m) => m[k] != null);
@@ -993,6 +1082,7 @@ function MeasureDialog({ person, list, cal, onClose }) {
                 <dd>
                   {fmt1(b[k])} cm
                   {d != null ? <span className="wo-delta"> {fmtSigned(d)} desde el inicio</span> : null}
+                  {k === 'waist_cm' && goal?.height_cm ? <span className="wo-delta">referencia: menos de {fmt1(goal.height_cm / 2)}</span> : null}
                 </dd>
               </div>
             );
@@ -1066,7 +1156,7 @@ function WorkoutRow({ list, cal, onOpen }) {
   );
 }
 
-function MealRow({ list, today, onOpen }) {
+function MealRow({ list, today, onOpen, goal }) {
   const mine = list.filter((m) => m.day === today);
   const t = dayTotals(mine);
   const last = mine[mine.length - 1];
@@ -1093,7 +1183,8 @@ function MealRow({ list, today, onOpen }) {
           <>
             {t.kcal != null ? (
               <>
-                <strong>≈ {fmtInt(t.kcal)}</strong> kcal ·{' '}
+                <strong className={goal?.kcal_hi && t.kcal > goal.kcal_hi ? 'over' : ''}>≈ {fmtInt(t.kcal)}</strong>
+                {goal?.kcal_hi ? ` / ${fmtInt(goal.kcal_hi)}` : ''} kcal ·{' '}
               </>
             ) : null}
             {t.n === 1 ? '1 comida' : `${t.n} comidas`}

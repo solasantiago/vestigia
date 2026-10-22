@@ -185,6 +185,13 @@ export function buildModel(db) {
         fruit_servings: Number(m.fruit_servings ?? 0),
       }))
       .sort((a, b) => new Date(a.eaten_at) - new Date(b.eaten_at) || a.id - b.id),
+    // Objetivos de salud por persona (peso objetivo, franja de calorías, altura).
+    goals: new Map(
+      (db.health_goals ?? []).map((g) => [
+        g.person_id,
+        { ...g, height_cm: g.height_cm == null ? null : Number(g.height_cm), target_kg: g.target_kg == null ? null : Number(g.target_kg) },
+      ]),
+    ),
     // Medidas del cuerpo (cm), cargadas desde el chat, por fecha.
     measures: [...(db.body_measures ?? [])]
       .map((m) => ({

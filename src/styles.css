@@ -4839,3 +4839,48 @@ select {
 .bal-grid td.sel {
   outline: 2px solid var(--border-strong);
 }
+/* v0.1.15 · objetivo de peso y umbral de calorías */
+.hrow-goal {
+  color: var(--text-2);
+}
+.hrow-main strong.over {
+  color: var(--st-warn-text);
+}
+.goal {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border-strong);
+}
+.goal-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+}
+.goal-top span {
+  color: var(--muted);
+  font-weight: 700;
+}
+.goal-track {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.goal-track span {
+  display: block;
+  height: 100%;
+  min-width: 4px;
+  background: var(--st-ok);
+}
+.goal-text {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}

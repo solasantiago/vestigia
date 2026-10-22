@@ -106,6 +106,13 @@ Las ideas sueltas, con su costo y lo que ya se definió, están en [Ideas pendie
   - la **semana en una grilla**: ✓ en rango, ↓ abajo, ↑ arriba; hoy cuenta como "en curso" hasta que termina el día.
 - Son referencias generales para orientarse, no un plan: sin meta de calorías.
 
+## v0.1.15 — Objetivo de peso y umbral de calorías ✅ (22/10/2026)
+
+- **Objetivos por persona** (se cargan desde el chat): peso objetivo, franja diaria de calorías para bajar de peso, piso de calorías y altura. Los valores viven solo en la base.
+- **Peso:** cuánto falta para el objetivo, el ritmo (kg por semana, con la recta de las pesadas de las últimas 4 semanas) y el mes estimado de llegada. En "+ Pesada", una barra de progreso desde la primera pesada y el promedio de los últimos 7 días.
+- **Comidas:** las calorías del día contra el tope ("≈ 485 / 2.200 kcal"), una barra con la franja en el tablero y una fila más en la grilla de la semana. La lectura en palabras dice cuántas calorías quedan hasta el tope. "Muy bajo" solo se marca con 3 comidas o más cargadas, para no confundir un día a medio cargar.
+- **Medidas:** la referencia de cintura (menos de la mitad de la altura).
+
 ## v0.2 — Cada uno en su celular (propuesta)
 
 - Cuentas de Mica y de Santi, con la privacidad de la §7 del documento funcional.

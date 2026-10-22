@@ -7,7 +7,7 @@ Los rastros de cada día en casa: check-ins de hábitos, paseos, caca y comida d
 
 La prueba de concepto con datos de ejemplo vive aparte, en [tracker_demo](https://github.com/solasantiago/tracker_demo).
 
-## Versión actual: v0.1.14, el tablero del iPad (y el iPhone)
+## Versión actual: v0.1.15, el tablero del iPad (y el iPhone)
 
 Una sola cuenta, **Casa**, con la sesión abierta en el iPad (pensado para el iPad horizontal, 1080 × 810).
 
@@ -31,10 +31,10 @@ Si algo está en rojo, se queda en el estado del día con una franja roja arriba
 - **Tratamientos** (por ejemplo, un colirio): cuando toca una aplicación aparece con el botón "Aplicado ✓"; recordatorio 15 min antes, naranja a los 30 min de atraso y rojo a los 90. La planilla completa queda en la pestaña Perros.
 - **Ciclo** (opcional, se configura en la base): fase y día del ciclo arriba de la agenda, con "¿Te vino? Hoy / Ayer" solo cuando corresponde. Sin semáforo; se oculta en modo visitas.
 - **Salud de cada persona** (para quien tenga datos cargados), en una sola tarjeta:
-  - **Peso:** el último en kg con un decimal y la diferencia con el anterior; "+ Pesada" para anotar uno nuevo.
+  - **Peso:** el último en kg con un decimal y la diferencia con el anterior; con un objetivo cargado, cuánto falta, el ritmo por semana y el mes estimado de llegada. "+ Pesada" para anotar uno nuevo.
   - **Ejercicio** (solo lectura): la última sesión del Apple Watch, sus zonas de pulso y las sesiones de la semana; "Ver" muestra ritmo, calorías, zonas, tramos por km, recuperación y el historial.
   - **Medidas** (solo lectura): la cintura y su cambio; "Ver" muestra todas las medidas, el cambio desde el inicio y el historial. Se cargan desde el chat.
-  - **Comidas** (solo lectura): calorías estimadas del día, verdura y fruta, proteína y una sugerencia para la próxima comida. "Ver" abre un tablero con una lectura en palabras del día y la semana, el balance contra la referencia y una grilla de la semana que marca cuándo se desvía. Se cargan desde el chat con fotos.
+  - **Comidas** (solo lectura): calorías estimadas del día (contra el tope, si hay objetivo), verdura y fruta, proteína y una sugerencia para la próxima comida. "Ver" abre un tablero con una lectura en palabras del día y la semana, el balance contra la referencia y una grilla de la semana que marca cuándo se desvía. Se cargan desde el chat con fotos.
   - Sin semáforo; se oculta en modo visitas.
 - **Agenda** de hoy y los próximos días.
 

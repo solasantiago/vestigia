@@ -34,6 +34,7 @@ export const TABLES = {
   workouts: ['id'],
   meals: ['id'],
   body_measures: ['id'],
+  health_goals: ['person_id'],
 };
 
 // Tablas que se escuchan en tiempo real.
@@ -60,6 +61,7 @@ export const LIVE_TABLES = [
   'workouts',
   'meals',
   'body_measures',
+  'health_goals',
 ];
 
 const PAGE = 1000;
