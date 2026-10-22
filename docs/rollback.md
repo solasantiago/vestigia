@@ -23,7 +23,7 @@ Cada versión publicada queda marcada con una rama `release/…` que no se toca 
 | `release/v0.1.12` | `be69625` | Sin registro de la casa; "Actualizar la app" | ✅ Sí (no muestra las comidas; peso y ejercicio en tarjetas separadas) |
 | `release/v0.1.13` | `f2fb2be` | Comidas y tarjeta de salud | ✅ Sí (sin medidas ni tablero; la tabla `body_measures` queda sin usar) |
 | `release/v0.1.14` | `0d62753` | Medidas y tablero de comidas | ✅ Sí (sin objetivo ni umbral; la tabla `health_goals` queda sin usar) |
-| `release/v0.1.15` | _(este commit)_ | Objetivo de peso y umbral de calorías | ✅ Es la de hoy |
+| `release/v0.1.15` | `a69bab9` | Objetivo de peso y umbral de calorías | ✅ Es la de hoy |
 
 Al publicar una versión nueva se crea su rama: `git push origin main:refs/heads/release/v0.2`.
 
