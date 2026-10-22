@@ -20,7 +20,7 @@ Cada versión publicada queda marcada con una rama `release/…` que no se toca 
 | `release/v0.1.9` | `500863f` | Peso de cada persona | ✅ Sí (no muestra el ejercicio; la tabla `workouts` queda sin usar) |
 | `release/v0.1.10` | `dfe2c9f` | Ejercicio (solo lectura) | ✅ Sí (sin el detalle; las columnas nuevas de `workouts` quedan sin usar) |
 | `release/v0.1.11` | `ca20b27` | Detalle del ejercicio | ✅ Sí (vuelve el registro de la casa) |
-| `release/v0.1.12` | `be69625` | Sin registro de la casa; \"Actualizar la app\" | ✅ Es la de hoy |
+| `release/v0.1.12` | `be69625` | Sin registro de la casa; "Actualizar la app" | ✅ Es la de hoy |
 
 Al publicar una versión nueva se crea su rama: `git push origin main:refs/heads/release/v0.2`.
 
