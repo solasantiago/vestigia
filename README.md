@@ -7,7 +7,7 @@ Los rastros de cada día en casa: check-ins de hábitos, paseos, caca y comida d
 
 La prueba de concepto con datos de ejemplo vive aparte, en [tracker_demo](https://github.com/solasantiago/tracker_demo).
 
-## Versión actual: v0.1.10, el tablero del iPad (y el iPhone)
+## Versión actual: v0.1.11, el tablero del iPad (y el iPhone)
 
 Una sola cuenta, **Casa**, con la sesión abierta en el iPad (pensado para el iPad horizontal, 1080 × 810).
 
@@ -31,7 +31,7 @@ Si algo está en rojo, se queda en el estado del día con una franja roja arriba
 - **Tratamientos** (por ejemplo, un colirio): cuando toca una aplicación aparece con el botón "Aplicado ✓"; recordatorio 15 min antes, naranja a los 30 min de atraso y rojo a los 90. La planilla completa queda en la pestaña Perros.
 - **Ciclo** (opcional, se configura en la base): fase y día del ciclo arriba de la agenda, con "¿Te vino? Hoy / Ayer" solo cuando corresponde. Sin semáforo; se oculta en modo visitas.
 - **Peso** (para quien tenga pesadas cargadas): el último peso en kg con un decimal y la diferencia con la pesada anterior; "+ Pesada" para anotar uno nuevo. Sin semáforo; se oculta en modo visitas.
-- **Ejercicio** (solo lectura): la última sesión del Apple Watch y cuántas van en la semana. Se carga desde el chat con las capturas de Fitness; la app no tiene botón para cargar. Se oculta en modo visitas.
+- **Ejercicio** (solo lectura): la última sesión del Apple Watch, sus zonas de pulso y el total de la semana; "Ver detalle" muestra ritmo, calorías, zonas, tramos por km, recuperación y el historial. Se carga desde el chat con las capturas de Fitness; la app no tiene botón para cargar. Se oculta en modo visitas.
 - **Agenda** de hoy y los próximos días.
 
 **Además:**

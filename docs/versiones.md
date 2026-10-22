@@ -80,6 +80,12 @@ Las ideas sueltas, con su costo y lo que ya se definió, están en [Ideas pendie
 - **Solo lectura:** los entrenamientos se cargan desde el chat con las capturas de la app Fitness del Apple Watch; la app no tiene botón para cargarlos. Se guardan también el pulso máximo, las calorías y los minutos en cada zona.
 - Sin semáforo ni avisos; se oculta en modo visitas. Los valores viven solo en la base. Que lleguen solos desde el Watch queda en [Ideas pendientes](ideas.md#9--ejercicio-automático-desde-el-apple-watch).
 
+## v0.1.11 — Detalle del ejercicio ✅ (21/10/2026)
+
+- La tarjeta de ejercicio suma una barra con el tiempo en cada zona de pulso y el total de la semana (sesiones, tiempo y km).
+- **"Ver detalle"** abre todo lo que traen las capturas de Fitness: duración, distancia, ritmo, pulso promedio y máximo, calorías, esfuerzo, clima, zonas con tiempo y porcentaje, tramos por km, recuperación al minuto y la nota. Abajo, el historial de sesiones: tocando una se ve su detalle.
+- Sigue siendo solo lectura: todo se carga desde el chat.
+
 ## v0.2 — Cada uno en su celular (propuesta)
 
 - Cuentas de Mica y de Santi, con la privacidad de la §7 del documento funcional.

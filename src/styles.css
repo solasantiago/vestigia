@@ -4403,3 +4403,138 @@ select {
 .workout-card .weight-val strong {
   font-size: 20px;
 }
+.workout-card .workout-week {
+  font-weight: 600;
+}
+.zone-bar {
+  display: flex;
+  gap: 2px;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.zone-bar.lg {
+  height: 14px;
+  border-radius: 7px;
+}
+.zone-bar span {
+  display: block;
+  min-width: 3px;
+}
+.z1 { background: #4f8fe0; }
+.z2 { background: #36bfae; }
+.z3 { background: #9cbf2a; }
+.z4 { background: #ee8a2c; }
+.z5 { background: #e04a7c; }
+.wo {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.wo-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.wo-head strong {
+  font-size: 16px;
+}
+.wo-head span,
+.wo .muted {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+.wo-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 14px;
+  margin: 0;
+}
+.wo-stats dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.wo-stats dd {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.wo-sec {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border-strong);
+}
+.wo-sec h4 {
+  margin: 0;
+  font-size: 14px;
+}
+.wo-sec p {
+  margin: 0;
+  font-size: 14px;
+}
+.wo-zones {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 4px 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.wo-zones li {
+  display: grid;
+  grid-template-columns: 10px 1fr auto 3.2em;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.wo-zones .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+.zone-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.wo-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.wo-table th {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
+  padding: 0 6px 4px;
+}
+.wo-table td {
+  text-align: right;
+  padding: 5px 6px;
+  border-top: 1px solid var(--border);
+}
+.wo-table th:first-child,
+.wo-table td:first-child {
+  text-align: left;
+  padding-left: 0;
+}
+.wo-hist tr {
+  cursor: pointer;
+}
+.wo-hist tr.sel td {
+  background: var(--surface-2, transparent);
+  font-weight: 800;
+}
+@media (max-width: 640px) {
+  .wo-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useApp } from '../lib/appctx.js';
 import { useData, useRun } from '../lib/data.jsx';
 import { useKiosk } from '../lib/kiosk.jsx';
-import { addDays, calDayOf, calTodayISO, dayMinutesOf, dow, fmtDayShort, fmtDuration, fmtTime } from '../lib/dates.js';
+import { addDays, calDayOf, calTodayISO, dayMinutesOf, dow, fmtDayShort, fmtDuration, fmtTime, fmtWeekday } from '../lib/dates.js';
 import { fmt1, fmt2, fmtSigned } from '../lib/format.js';
 import { visibleEvents } from '../lib/metrics.js';
 import { computeDay, cycleState, CYCLE_PHASE, rulesOf } from '../lib/status.js';
@@ -370,16 +370,53 @@ function WorkoutCards() {
     .map((p) => <WorkoutCard key={p.id} person={p} />);
 }
 
+const ZONES = ['Zona 1', 'Zona 2', 'Zona 3', 'Zona 4', 'Zona 5'];
+const pad2 = (n) => String(n).padStart(2, '0');
+/** 3487 → "58:07"; 3725 → "1:02:05" */
+function fmtClockSec(sec) {
+  const s = Math.round(sec);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  return h ? `${h}:${pad2(m)}:${pad2(s % 60)}` : `${m}:${pad2(s % 60)}`;
+}
+/** segundos por km → 12'46" */
+function fmtPace(secPerKm) {
+  if (!Number.isFinite(secPerKm) || secPerKm <= 0) return '—';
+  const s = Math.round(secPerKm);
+  return `${Math.floor(s / 60)}'${pad2(s % 60)}"`;
+}
+const fmtKm = (km) => (km == null ? '—' : Number.isInteger(km * 10) ? fmt1(km) : fmt2(km));
+const durSec = (w) => (new Date(w.ended_at) - new Date(w.started_at)) / 1000;
+
+function ZoneBar({ zones, size = 'sm' }) {
+  const z = (zones ?? []).map((v) => Number(v) || 0);
+  const total = z.reduce((a, b) => a + b, 0);
+  if (!total) return null;
+  return (
+    <div className={`zone-bar ${size}`} role="img" aria-label={z.map((v, i) => `${ZONES[i]}: ${fmtClockSec(v)}`).join(', ')}>
+      {z.map((v, i) => (v ? <span key={i} className={`z${i + 1}`} style={{ flexGrow: v }} /> : null))}
+    </div>
+  );
+}
+
+function weekOf(list, cal) {
+  const monday = addDays(cal, -((dow(cal) + 6) % 7));
+  const ws = list.filter((w) => calDayOf(w.started_at) >= monday);
+  return {
+    n: ws.length,
+    sec: ws.reduce((a, w) => a + durSec(w), 0),
+    km: ws.reduce((a, w) => a + (w.distance_km ?? 0), 0),
+  };
+}
+
 function WorkoutCard({ person }) {
   const { model } = useData();
   const { now } = useApp();
+  const [open, setOpen] = useState(false);
   const cal = calTodayISO(new Date(now));
-  const monday = addDays(cal, -((dow(cal) + 6) % 7));
   const list = model.workouts.filter((w) => w.person_id === person.id);
   const last = list[list.length - 1];
-  const week = list.filter((w) => calDayOf(w.started_at) >= monday).length;
-  const min = Math.round((new Date(last.ended_at) - new Date(last.started_at)) / 60000);
-  const km = last.distance_km == null ? null : last.distance_km.toFixed(2).endsWith('0') ? fmt1(last.distance_km) : fmt2(last.distance_km);
+  const wk = weekOf(list, cal);
   const sub = [whenLabel(last.started_at, cal), last.hr_avg ? `${last.hr_avg} lpm` : null, last.effort ? `esfuerzo ${last.effort}/10` : null].filter(Boolean).join(' · ');
   return (
     <div className="kblock workout-card">
@@ -387,16 +424,175 @@ function WorkoutCard({ person }) {
         <span className="kblock-title">
           <Avatar person={person} size="sm" /> 🏃 Ejercicio
         </span>
-        <span className="workout-week">{week === 0 ? 'Nada esta semana' : week === 1 ? '1 esta semana' : `${week} esta semana`}</span>
+        <button type="button" className="btn ghost xs" onClick={() => setOpen(true)}>
+          Ver detalle
+        </button>
       </header>
       <div className="weight">
         <span className="weight-val">
-          <strong>{fmtDuration(min)}</strong>
-          {km ? ` · ${km} km` : ''}
+          <strong>{fmtDuration(durSec(last) / 60)}</strong>
+          {last.distance_km != null ? ` · ${fmtKm(last.distance_km)} km` : ''}
         </span>
         <span className="weight-sub">{sub}</span>
       </div>
+      <ZoneBar zones={last.zones_sec} />
+      <span className="workout-week">
+        {wk.n === 0 ? 'Nada esta semana' : `Semana: ${wk.n} · ${fmtDuration(wk.sec / 60)}${wk.km ? ` · ${fmtKm(Math.round(wk.km * 100) / 100)} km` : ''}`}
+      </span>
+      {open ? <WorkoutDialog person={person} list={list} cal={cal} onClose={() => setOpen(false)} /> : null}
     </div>
+  );
+}
+
+function WorkoutDialog({ person, list, cal, onClose }) {
+  const [selId, setSelId] = useState(list[list.length - 1].id);
+  const w = list.find((x) => x.id === selId) ?? list[list.length - 1];
+  const sec = durSec(w);
+  const day = calDayOf(w.started_at);
+  const zones = (w.zones_sec ?? []).map((v) => Number(v) || 0);
+  const zTotal = zones.reduce((a, b) => a + b, 0);
+  const splits = Array.isArray(w.splits) ? w.splits : [];
+  const ctx = [`${fmtWeekday(day, 'short')} ${Number(day.slice(8))}/${Number(day.slice(5, 7))}`, `${fmtTime(w.started_at)}–${fmtTime(w.ended_at)}`, w.temp_c != null ? `${w.temp_c}°` : null, w.humidity != null ? `${w.humidity} % humedad` : null]
+    .filter(Boolean)
+    .join(' · ');
+  const stats = [
+    ['Duración', fmtClockSec(sec)],
+    ['Distancia', w.distance_km != null ? `${fmtKm(w.distance_km)} km` : '—'],
+    ['Ritmo prom.', w.distance_km ? `${fmtPace(sec / w.distance_km)} /km` : '—'],
+    ['Pulso', w.hr_avg ? `${w.hr_avg} prom.${w.hr_max ? ` · ${w.hr_max} máx.` : ''}` : '—'],
+    ['Calorías', w.kcal_active ? `${w.kcal_active} activas${w.kcal_total ? ` · ${w.kcal_total} total` : ''}` : '—'],
+    ['Esfuerzo', w.effort ? `${w.effort} / 10` : '—'],
+  ];
+  const wk = weekOf(list, cal);
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      title={`🏃 Ejercicio de ${person.short_name}`}
+      footer={
+        <button type="button" className="btn primary" onClick={onClose}>
+          Listo
+        </button>
+      }
+    >
+      <div className="wo">
+        <div className="wo-head">
+          <strong>
+            {w.kind}
+            {w.plan ? ` · ${w.plan}` : ''}
+          </strong>
+          <span>{ctx}</span>
+        </div>
+
+        <dl className="wo-stats">
+          {stats.map(([k, v]) => (
+            <div key={k}>
+              <dt>{k}</dt>
+              <dd>{v}</dd>
+            </div>
+          ))}
+        </dl>
+
+        {zTotal ? (
+          <section className="wo-sec">
+            <h4>Pulso por zona</h4>
+            <ZoneBar zones={zones} size="lg" />
+            <ul className="wo-zones">
+              {zones.map((v, i) => (
+                <li key={i}>
+                  <span className={`zone-dot z${i + 1}`} aria-hidden="true" />
+                  <span>{ZONES[i]}</span>
+                  <span className="num">{fmtClockSec(v)}</span>
+                  <span className="num muted">{Math.round((v / zTotal) * 100)} %</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+        {splits.length ? (
+          <section className="wo-sec">
+            <h4>Tramos</h4>
+            <table className="wo-table">
+              <thead>
+                <tr>
+                  <th>Km</th>
+                  <th>Tiempo</th>
+                  <th>Ritmo</th>
+                  <th>Pulso</th>
+                </tr>
+              </thead>
+              <tbody>
+                {splits.map((t, i) => {
+                  const upTo = splits.slice(0, i + 1).reduce((a, x) => a + (Number(x.km) || 0), 0);
+                  return (
+                    <tr key={i}>
+                      <td>{fmtKm(Math.round(upTo * 100) / 100)}</td>
+                      <td>{fmtClockSec(t.sec)}</td>
+                      <td>{fmtPace(t.sec / (Number(t.km) || 1))}</td>
+                      <td>{t.hr ?? '—'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </section>
+        ) : null}
+
+        {w.hr_end != null && w.hr_1min != null ? (
+          <section className="wo-sec">
+            <h4>Recuperación</h4>
+            <p>
+              Al terminar {w.hr_end} lpm · al minuto {w.hr_1min} lpm ({fmtSigned(w.hr_1min - w.hr_end, 0)})
+            </p>
+          </section>
+        ) : null}
+
+        {w.note ? (
+          <section className="wo-sec">
+            <h4>Nota</h4>
+            <p>{w.note}</p>
+          </section>
+        ) : null}
+
+        <section className="wo-sec">
+          <h4>Historial</h4>
+          <p className="muted small">
+            Esta semana: {wk.n === 1 ? '1 sesión' : `${wk.n} sesiones`} · {fmtDuration(wk.sec / 60)}
+            {wk.km ? ` · ${fmtKm(Math.round(wk.km * 100) / 100)} km` : ''}
+          </p>
+          <table className="wo-table wo-hist">
+            <thead>
+              <tr>
+                <th>Día</th>
+                <th>Tiempo</th>
+                <th>Km</th>
+                <th>Pulso</th>
+                <th>Esf.</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...list]
+                .reverse()
+                .slice(0, 12)
+                .map((x) => (
+                  <tr key={x.id} className={x.id === w.id ? 'sel' : ''} onClick={() => setSelId(x.id)}>
+                    <td>
+                      <button type="button" className="link-btn" aria-pressed={x.id === w.id} onClick={() => setSelId(x.id)}>
+                        {whenLabel(x.started_at, cal)}
+                      </button>
+                    </td>
+                    <td>{fmtClockSec(durSec(x))}</td>
+                    <td>{fmtKm(x.distance_km)}</td>
+                    <td>{x.hr_avg ?? '—'}</td>
+                    <td>{x.effort ?? '—'}</td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </section>
+      </div>
+    </Dialog>
   );
 }
 
