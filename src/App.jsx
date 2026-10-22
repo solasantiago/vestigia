@@ -25,7 +25,7 @@ const TABS = [
   { id: 'perros', label: 'Perros', icon: '🐾', period: true, View: Dogs },
   { id: 'habitos', label: 'Hábitos', icon: '✅', period: true, View: Habits },
   { id: 'bienestar', label: 'Bienestar', icon: '🌿', period: true, View: Wellbeing, feature: 'wellbeing', personal: true },
-  { id: 'casa', label: 'Agenda y casa', short: 'Agenda', icon: '🏠', View: HomeAgenda },
+  { id: 'casa', label: 'Agenda', short: 'Agenda', icon: '🏠', View: HomeAgenda },
   { id: 'analisis', label: 'Análisis', icon: '🔍', period: true, View: Analysis, feature: 'analysis', personal: true },
 ];
 
@@ -287,6 +287,13 @@ function Shell() {
               <p className="muted small">
                 {APP_NAME} v{APP_VERSION} · registrando desde el {fmtDayLong(startDate)}
               </p>
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={() => window.location.replace(`${window.location.pathname}?v=${Date.now()}${window.location.hash}`)}
+              >
+                Actualizar la app
+              </button>
               <button type="button" className="btn ghost" onClick={signOut}>
                 Cerrar sesión
               </button>

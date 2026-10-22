@@ -86,6 +86,11 @@ Las ideas sueltas, con su costo y lo que ya se definió, están en [Ideas pendie
 - **"Ver detalle"** abre todo lo que traen las capturas de Fitness: duración, distancia, ritmo, pulso promedio y máximo, calorías, esfuerzo, clima, zonas con tiempo y porcentaje, tramos por km, recuperación al minuto y la nota. Abajo, el historial de sesiones: tocando una se ve su detalle.
 - Sigue siendo solo lectura: todo se carga desde el chat.
 
+## v0.1.12 — Sin registro de la casa ✅ (21/10/2026)
+
+- Se quita el **registro de la casa** (no se usaba): la pestaña pasa a llamarse **Agenda**. Lo anotado sigue guardado en la base.
+- En las opciones, **"Actualizar la app"** recarga la versión más nueva sin tener que cerrar la app.
+
 ## v0.2 — Cada uno en su celular (propuesta)
 
 - Cuentas de Mica y de Santi, con la privacidad de la §7 del documento funcional.

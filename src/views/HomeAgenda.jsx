@@ -1,12 +1,10 @@
 import { useMemo, useState } from 'react';
 import { useApp } from '../lib/appctx.js';
 import { useData, useRun } from '../lib/data.jsx';
-import { addDays, calDayOf, calTodayISO, dayOf, fmtDayLong, fmtMonth, fmtTime, mondayIndex, range } from '../lib/dates.js';
-import { useKiosk } from '../lib/kiosk.jsx';
+import { addDays, calDayOf, calTodayISO, fmtDayLong, fmtMonth, fmtTime, mondayIndex, range } from '../lib/dates.js';
 import { TZ } from '../config.js';
 import { visibleEvents } from '../lib/metrics.js';
-import { Card, Dialog, Segmented, SectionTitle } from '../components/ui.jsx';
-import { NoTraces } from '../components/prints.jsx';
+import { Card, Dialog, Segmented } from '../components/ui.jsx';
 import { CATEGORY, EventRow } from './common.jsx';
 
 /** 'YYYY-MM-DD' + 'HH:MM' en hora de Buenos Aires → ISO UTC. */
@@ -137,97 +135,7 @@ export default function HomeAgenda() {
         </Card>
       </div>
 
-      {model.chores.length ? (
-        <SectionTitle sub="Opcional: se anota lo que se hizo, si se quiere. No hay pendientes, atrasos ni metas.">Registro de la casa</SectionTitle>
-      ) : null}
-      <HouseLog />
-
       <EventDialog open={open} onClose={() => setOpen(false)} defaultDay={picked >= today ? picked : today} />
-    </div>
-  );
-}
-
-function HouseLog() {
-  const { model, actions } = useData();
-  const { person, today, startDate } = useApp();
-  const kiosk = useKiosk();
-  const run = useRun();
-  // En el iPad, quién anota es quien eligió su nombre al tocar el resumen.
-  const who = person === 'casa' ? kiosk.who : person;
-  if (!model.chores.length) return null;
-  const since = addDays(today, -6) < startDate ? startDate : addDays(today, -6);
-  const byId = new Map(model.chores.map((c) => [c.id, c]));
-  const logs = [...model.logsByChore.values()]
-    .flat()
-    .map((l) => ({ ...l, day: dayOf(l.done_at), chore: byId.get(l.chore_id) }))
-    .filter((l) => l.chore && l.day >= since)
-    .sort((a, b) => new Date(b.done_at) - new Date(a.done_at));
-  const todayCount = (id) => logs.filter((l) => l.day === today && l.chore_id === id).length;
-  const days = [...new Set(logs.map((l) => l.day))];
-  const name = (id) => model.peopleById.get(id)?.short_name ?? '';
-
-  return (
-    <div className="grid two wide-left">
-      <Card
-        title="¿Qué se hizo?"
-        subtitle="Tocá lo que hicieron para dejarlo anotado."
-        actions={person === 'casa' && who ? <span className="muted small">Anota: {model.peopleById.get(who)?.short_name}</span> : null}
-      >
-        <div className="choice-grid chores-grid">
-          {model.chores.map((c) => {
-            const n = todayCount(c.id);
-            return (
-              <button
-                key={c.id}
-                type="button"
-                className={`choice ${n ? 'on' : ''}`}
-                disabled={!who}
-                onClick={() => run(() => actions.choreDone(c.id, who), `${c.name}: anotado`)}
-              >
-                <span aria-hidden="true">{c.emoji}</span>
-                <span className="choice-label">{c.name}</span>
-                {n ? <span className="choice-count">✓{n > 1 ? ` ×${n}` : ''}</span> : null}
-              </button>
-            );
-          })}
-        </div>
-        {!who ? (
-          <p className="muted small">
-            Para anotar, tocá <strong>👀 Solo miro</strong> arriba y elegí quién sos.
-          </p>
-        ) : null}
-      </Card>
-      <Card title="Anotado estos días" subtitle="Solo como registro">
-        {days.length ? (
-          <div className="log-days">
-            {days.map((d) => (
-              <div key={d} className="log-day">
-                <h4 className="cap">{d === today ? 'Hoy' : fmtDayLong(d)}</h4>
-                <ul>
-                  {logs
-                    .filter((l) => l.day === d)
-                    .map((l) => (
-                      <li key={l.id}>
-                        <span aria-hidden="true">{l.chore.emoji}</span> {l.chore.name}
-                        <span className="muted small">
-                          {' '}
-                          · {name(l.done_by)} {fmtTime(l.done_at)}
-                        </span>
-                        {d === today ? (
-                          <button type="button" className="link-btn" aria-label={`Borrar ${l.chore.name}`} onClick={() => run(() => actions.undoChore(l.id), 'Borrado')}>
-                            borrar
-                          </button>
-                        ) : null}
-                      </li>
-                    ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <NoTraces>Todavía no se anotó nada. Es opcional.</NoTraces>
-        )}
-      </Card>
     </div>
   );
 }

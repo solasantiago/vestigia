@@ -7,7 +7,7 @@ Los rastros de cada día en casa: check-ins de hábitos, paseos, caca y comida d
 
 La prueba de concepto con datos de ejemplo vive aparte, en [tracker_demo](https://github.com/solasantiago/tracker_demo).
 
-## Versión actual: v0.1.11, el tablero del iPad (y el iPhone)
+## Versión actual: v0.1.12, el tablero del iPad (y el iPhone)
 
 Una sola cuenta, **Casa**, con la sesión abierta en el iPad (pensado para el iPad horizontal, 1080 × 810).
 
@@ -40,7 +40,8 @@ Si algo está en rojo, se queda en el estado del día con una franja roja arriba
 - **Modo noche (de 1 a 7):** pantalla tenue con el reloj. Si falta algo, titila hasta que se anote o se toque "Entendido".
 - **Modo visitas:** el resumen no muestra las pastillas. Se apaga solo al terminar el día.
 - **Perras:** bolsa de alimento, gráficos e historial. La bolsa que ya estaba empezada al arrancar no se usa para calcular; Vestigia aprende el consumo desde la primera bolsa nueva.
-- **Hábitos y Agenda y casa:** métricas que se llenan desde el primer día y registro opcional de la casa, sin pendientes, atrasos ni metas.
+- **Hábitos y Agenda:** métricas que se llenan desde el primer día y la agenda compartida.
+- **Actualizar la app** (en las opciones): recarga la última versión sin cerrar la app.
 - Ánimo, sueño, pantalla y análisis quedan para las próximas versiones.
 
 ### Reglas del semáforo de las perras
