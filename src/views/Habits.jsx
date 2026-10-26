@@ -66,6 +66,34 @@ export const STATE_LEGEND = [
   { label: 'No tocaba', color: 'var(--state-off)' },
 ];
 
+// Cambios de dosis (schedule.dose_history = [{ from: 'AAAA-MM-DD', detail: '75 mg' }, …], solo en la base):
+// en el mapa de cada hábito, los días hechos se pintan con el color de la dosis de ese día.
+const DOSE_COLORS = ['var(--accent)', 'var(--cat-2)', 'var(--cat-5)', 'var(--cat-4)'];
+
+function doseHistory(h) {
+  const hist = h.schedule?.dose_history;
+  return Array.isArray(hist) && hist.length > 1 ? [...hist].sort((a, b) => a.from.localeCompare(b.from)) : null;
+}
+
+function doseOn(hist, day) {
+  let idx = -1;
+  hist.forEach((p, i) => {
+    if (day >= p.from) idx = i;
+  });
+  return idx < 0 ? null : { idx, detail: hist[idx].detail, color: DOSE_COLORS[idx % DOSE_COLORS.length] };
+}
+
+function habitCell(model, h, d, today, hist) {
+  const state = habitDayState(model, h, d, today);
+  const base = stateCell(state);
+  if (!base || !hist) return base;
+  const dose = doseOn(hist, d);
+  if (!dose) return base;
+  if (state === 'si') return { ...base, fill: dose.color, label: `${base.label} · ${dose.detail}` };
+  if (state === 'parcial') return { ...base, fill: `color-mix(in oklab, ${dose.color} 45%, var(--surface))`, label: `${base.label} · ${dose.detail}` };
+  return { ...base, label: `${base.label} · ${dose.detail}` };
+}
+
 export function seqFill(pct) {
   if (pct == null) return 'var(--state-off)';
   return `color-mix(in oklab, var(--accent) ${Math.round(12 + pct * 88)}%, var(--surface))`;
@@ -270,6 +298,7 @@ export default function Habits() {
                   {h.source === 'auto' ? 'Automático · ' : `${SLOT_LABEL[h.slot]} · `}
                   {daysText(h.days)}
                   {h.doses > 1 ? ` · ${h.doses} tomas` : ''}
+                  {h.schedule?.detail ? ` · ${h.schedule.detail}` : ''}
                 </p>
               </div>
             </header>
@@ -303,8 +332,16 @@ export default function Habits() {
               minCell={6}
               gap={2}
               showWeekdays={false}
-              cell={(d) => stateCell(habitDayState(model, h, d, today))}
+              cell={(d) => habitCell(model, h, d, today, doseHistory(h))}
             />
+            {doseHistory(h) ? (
+              <Legend
+                items={doseHistory(h).map((p, i) => ({
+                  label: `${p.detail} · desde el ${fmtDayShort(p.from)}`,
+                  color: DOSE_COLORS[i % DOSE_COLORS.length],
+                }))}
+              />
+            ) : null}
             {comp.na || comp.miss || comp.parcial ? (
               <p className="card-foot">
                 {[

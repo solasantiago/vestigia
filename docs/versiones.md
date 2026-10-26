@@ -113,6 +113,11 @@ Las ideas sueltas, con su costo y lo que ya se definió, están en [Ideas pendie
 - **Comidas:** las calorías del día contra el tope ("≈ 485 / 2.200 kcal"), una barra con la franja en el tablero y una fila más en la grilla de la semana. La lectura en palabras dice cuántas calorías quedan hasta el tope. "Muy bajo" solo se marca con 3 comidas o más cargadas, para no confundir un día a medio cargar.
 - **Medidas:** la referencia de cintura (menos de la mitad de la altura).
 
+## v0.1.16 — Dosis en el mapa de hábitos ✅ (26/10/2026)
+
+- Si una pastilla cambió de dosis, en su mapa de **Hábitos** cada día hecho se pinta con el color de la dosis de ese día, con una leyenda debajo ("… · desde el …"). La tarjeta muestra también la dosis actual.
+- Los cambios de dosis se cargan desde el chat (en el horario del hábito, solo en la base).
+
 ## v0.2 — Cada uno en su celular (propuesta)
 
 - Cuentas de Mica y de Santi, con la privacidad de la §7 del documento funcional.
