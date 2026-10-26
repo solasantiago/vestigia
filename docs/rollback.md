@@ -24,7 +24,7 @@ Cada versión publicada queda marcada con una rama `release/…` que no se toca 
 | `release/v0.1.13` | `f2fb2be` | Comidas y tarjeta de salud | ✅ Sí (sin medidas ni tablero; la tabla `body_measures` queda sin usar) |
 | `release/v0.1.14` | `0d62753` | Medidas y tablero de comidas | ✅ Sí (sin objetivo ni umbral; la tabla `health_goals` queda sin usar) |
 | `release/v0.1.15` | `a69bab9` | Objetivo de peso y umbral de calorías | ✅ Sí (el mapa de hábitos no distingue dosis) |
-| `release/v0.1.16` | _(este commit)_ | Dosis en el mapa de hábitos | ✅ Es la de hoy |
+| `release/v0.1.16` | `27c1c5f` | Dosis en el mapa de hábitos | ✅ Es la de hoy |
 
 Al publicar una versión nueva se crea su rama: `git push origin main:refs/heads/release/v0.2`.
 
